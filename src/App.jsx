@@ -13,8 +13,10 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { useTheme } from "@/hooks/use-theme"
 
 export default function Page() {
+  const { mode, effective, setTheme } = useTheme()
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -39,6 +41,28 @@ export default function Page() {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+            <Separator orientation="vertical" className="ml-2 mr-2 data-[orientation=vertical]:h-4" />
+            <div className="flex items-center gap-2">
+              <button
+                className={`h-7 rounded-md px-2 text-xs font-medium border ${mode === 'light' ? 'bg-primary text-primary-foreground border-transparent' : 'bg-transparent'}`}
+                onClick={() => setTheme('light')}
+              >
+                Light
+              </button>
+              <button
+                className={`h-7 rounded-md px-2 text-xs font-medium border ${mode === 'dark' ? 'bg-primary text-primary-foreground border-transparent' : 'bg-transparent'}`}
+                onClick={() => setTheme('dark')}
+              >
+                Dark
+              </button>
+              <button
+                className={`h-7 rounded-md px-2 text-xs font-medium border ${mode === 'system' ? 'bg-primary text-primary-foreground border-transparent' : 'bg-transparent'}`}
+                onClick={() => setTheme('system')}
+              >
+                System
+              </button>
+              <span className="text-xs text-muted-foreground">Effective: {effective}</span>
+            </div>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">

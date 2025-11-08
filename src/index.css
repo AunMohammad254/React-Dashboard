@@ -117,4 +117,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  @media (prefers-reduced-motion: no-preference) {
+    :root,
+    .dark :root,
+    body,
+    .dark body {
+      transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+    }
+  }
 }
