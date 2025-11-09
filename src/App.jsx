@@ -14,6 +14,11 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { useTheme } from "@/hooks/use-theme"
+import { SectionCards } from "@/components/section-cards"
+import { ChartAreaInteractive } from "@/components/chart-area-interactive"
+import { DataTable } from "@/components/data-table"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
+import dashboardData from "@/app/dashboard/data.json"
 
 export default function Page() {
   const { mode, effective, setTheme } = useTheme()
@@ -32,12 +37,12 @@ export default function Page() {
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink href="#">
-                    Building Your Application
+                    Documents
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -66,12 +71,20 @@ export default function Page() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-          </div>
-          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+          {/* Stats Cards Section */}
+          <ErrorBoundary>
+            <SectionCards />
+          </ErrorBoundary>
+          
+          {/* Chart Section */}
+          <ErrorBoundary>
+            <ChartAreaInteractive />
+          </ErrorBoundary>
+          
+          {/* Data Table Section */}
+          <ErrorBoundary>
+            <DataTable data={dashboardData} />
+          </ErrorBoundary>
         </div>
       </SidebarInset>
     </SidebarProvider>

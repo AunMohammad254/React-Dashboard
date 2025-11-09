@@ -75,3 +75,17 @@ This project implements a comprehensive theme system that detects and applies Wi
 - Adding components: Ensure styles use theme variables and test both themes.
 - Debugging: Inspect `documentElement.classList` for `.dark`; check `localStorage` key; verify `matchMedia` state.
 - Visual regression: Maintain per-theme snapshots; run cross-tab sync checks.
+
+## Rendering Fixes (Badge/Card)
+- Verified import aliases (`@` -> `src`) in `vite.config.js` and confirmed named exports in `src/components/ui/badge.jsx` and `src/components/ui/card.jsx`.
+- Fixed `Badge` `outline` variant to include a visible `border` for proper outlined appearance.
+- Added `src/components/ErrorBoundary.jsx` and wrapped `SectionCards` in `App.jsx` to isolate and catch rendering issues.
+- Confirmed Tailwind v4 tokens and CSS variables in `src/index.css` ensure classes like `bg-card` and `text-card-foreground` render correctly.
+
+### Testing & Verification
+- Run `npm run dev` and visit the local preview to verify components render without errors.
+- Check browser console for warnings; none observed during smoke tests.
+- Verified responsive behavior on typical viewport sizes; container queries in `CardHeader` depend on modern browser support.
+
+### Cross-Browser Notes
+- The UI uses CSS variables and container queries. Test in latest Chrome, Firefox, and Safari for full support. For legacy browsers, consider fallbacks if strict compatibility is required.
