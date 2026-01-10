@@ -128,8 +128,8 @@ void main() {
 }
 `;
 
-export default function Aurora({ colorStops = ['#3A29FF', '#FF94B4', '#FF3232'], amplitude = 1.0, blend = 0.5, speed = 0.5 }) {
-    const props = { colorStops, amplitude, blend, speed };
+export default function Aurora({ colorStops = ['#3A29FF', '#FF94B4', '#FF3232'], amplitude = 1.0, blend = 0.5, speed = 0.5, paused = false }) {
+    const props = { colorStops, amplitude, blend, speed, paused };
     const propsRef = useRef(props);
     propsRef.current = props;
 
@@ -196,6 +196,7 @@ export default function Aurora({ colorStops = ['#3A29FF', '#FF94B4', '#FF3232'],
         let animateId = 0;
         const update = t => {
             animateId = requestAnimationFrame(update);
+            if (propsRef.current.paused) return;
             const { time = t * 0.01 } = {}; // Use t as base time
             // Use ref values for real-time updates
             const currentSpeed = propsRef.current.speed || 0.5;

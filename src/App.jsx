@@ -14,6 +14,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState("generate");
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [animationsEnabled, setAnimationsEnabled] = useState(true);
 
   useEffect(() => {
     // Get initial session
@@ -100,6 +101,8 @@ export default function App() {
         setCurrentView={setCurrentView}
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
+        animationsEnabled={animationsEnabled}
+        setAnimationsEnabled={setAnimationsEnabled}
         onSignOut={() => supabase.auth.signOut()}
       />
 
@@ -115,6 +118,7 @@ export default function App() {
           blend={0.5}
           amplitude={1.0}
           colorStops={["#4ade80", "#a855f7", "#3b82f6"]}
+          paused={!animationsEnabled}
           style={{
             opacity: 0.6,
             backgroundColor: "#0f172a"

@@ -1,421 +1,13 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { motion, AnimatePresence } from "framer-motion";
-import { LinkButton, PrimaryButton } from "./Button";
+import { LinkButton } from "./Button";
 import GalaxyButton from "./GalaxyButton";
 import LogoIcon from "../assets/logo.svg";
-import { APIRequestHelper, checkNetworkStatus, logNetworkDiagnostics } from "../utils/networkUtils";
-
-// API Rate Limiting and Request Queue Management
-const MODELS = {
-  "auto": { id: "auto", name: "✨ Auto (Smart Select)" },
-  "gemini-3-flash": { id: "gemini-3-flash", name: "⚡ Gemini 3.0 Flash (Best)" },
-  "gemini-2.5-flash": { id: "gemini-2.5-flash", name: "🚀 Gemini 2.5 Flash" },
-  "gemini-2.5-flash-lite": { id: "gemini-2.5-flash-lite", name: "💨 Gemini 2.5 Flash Lite" },
-  "gemma-3-27b": { id: "gemma-3-27b", name: "🧠 Gemma 3 27B" },
-  "gemma-3-12b": { id: "gemma-3-12b", name: "🤖 Gemma 3 12B" },
-};
-
-class GeminiAPIManager {
-  constructor() {
-    this.queue = [];
-    this.isProcessing = false;
-    this.maxRetries = 5;
-    this.rateLimits = {
-      "gemini-3-flash": { rpm: 1, window: 60000 },
-      "gemini-2.5-flash": { rpm: 5, window: 60000 },
-      "default": { rpm: 2, window: 60000 }
-    };
-  }
-
-  // Get locally stored usage timestamp to enforce "1 user 1 minute" rule for high-end models
-  canMakeLocalRequest(modelId) {
-    if (modelId === 'auto') return true;
-
-    const lastUsageKey = `pitchcraft_last_usage_${modelId}`;
-    const lastUsage = localStorage.getItem(lastUsageKey);
-    const now = Date.now();
-
-    // Specific rule: 1 user 1 min for gemini-3-flash
-    if (modelId === 'gemini-3-flash') {
-      if (lastUsage && (now - parseInt(lastUsage)) < 60000) {
-        const remaining = Math.ceil((60000 - (now - parseInt(lastUsage))) / 1000);
-        throw new Error(`Wait ${remaining}s before reusing ${MODELS[modelId].name}. Rate limit: 1/min.`);
-      }
-    }
-    return true;
-  }
-
-  recordUsage(modelId) {
-    if (modelId !== 'auto') {
-      localStorage.setItem(`pitchcraft_last_usage_${modelId}`, Date.now().toString());
-    }
-  }
-
-  // Validate API key format and availability
-  validateApiKey(apiKey) {
-    if (!apiKey) {
-      throw new Error("Gemini API key is missing. Please check your .env file and ensure VITE_GEMINI_API_KEY is set.");
-    }
-
-    // Handle undefined environment variable (shows as string "undefined")
-    if (apiKey === 'undefined' || apiKey === '${import.meta.env.VITE_GEMINI_API_KEY}') {
-      throw new Error("Environment variable VITE_GEMINI_API_KEY is not set. Please create a .env file with your Gemini API key.");
-    }
-
-    // Basic format validation for Google API keys
-    if (!apiKey.startsWith('AIza') || apiKey.length < 35) {
-      throw new Error("Invalid Gemini API key format. Google API keys should start with 'AIza' and be at least 35 characters long.");
-    }
-
-    // Check for common placeholder values
-    const placeholders = ['your_gemini_api_key_here', 'AIzaSyAcFSJm_B0GVn0VpQDijlQxMpLzfPeiqq8'];
-    if (placeholders.includes(apiKey)) {
-      throw new Error("Please replace the placeholder API key with your actual Gemini API key.");
-    }
-
-    return true;
-  }
-
-  // Check API quota and availability
-  async checkApiQuota(apiKey) {
-    try {
-      console.log('🔍 Checking API quota and availability...');
-
-      // Make a minimal test request to check quota
-      const testRequest = {
-        contents: [{ parts: [{ text: "Test" }] }],
-      };
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(testRequest),
-        }
-      );
-
-      if (response.status === 403) {
-        throw new Error("API key is invalid or has insufficient permissions. Please verify your Gemini API key and ensure it has the necessary permissions.");
-      } else if (response.status === 429) {
-        throw new Error("API quota exceeded. Please wait a few minutes before trying again or consider upgrading your API plan.");
-      }
-
-      console.log('✅ API quota check passed');
-      return true;
-    } catch (error) {
-      console.error('❌ API quota check failed:', error);
-      throw error;
-    }
-  }
-
-  // Main Entry Point for Request
-  async makeRequest(requestBody, apiKey, modelId = 'auto', retryCount = 0, onQueueUpdate = null) {
-    this.validateApiKey(apiKey);
-    this.canMakeLocalRequest(modelId);
-
-    if (!checkNetworkStatus()) {
-      logNetworkDiagnostics();
-      throw new Error("No internet connection.");
-    }
-
-    // Resolve Model ID
-    let targetModel = modelId;
-    if (modelId === 'auto') {
-      targetModel = 'gemini-2.5-flash';
-    }
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`;
-    return this._executeRequestWithRetry(url, requestBody, targetModel, retryCount, onQueueUpdate);
-  }
-
-  async _executeRequestWithRetry(url, requestBody, modelId, retryCount, onQueueUpdate) {
-    const requestOptions = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
-    };
-
-    try {
-      console.log(`🚀 Sending request to ${modelId} (Attempt ${retryCount + 1})`);
-
-      const response = await fetch(url, requestOptions);
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          console.warn(`⏳ Rate limit hit for ${modelId}. Entering waiting list...`);
-
-          if (retryCount >= this.maxRetries) {
-            throw new Error("All slots are currently full. Please try a different model or wait a few minutes.");
-          }
-
-          const waitTime = Math.min(2000 * Math.pow(2, retryCount), 15000);
-
-          if (onQueueUpdate) {
-            onQueueUpdate(`High traffic. Waiting for open slot... (Queue #${this.maxRetries - retryCount})`);
-          }
-
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          return this._executeRequestWithRetry(url, requestBody, modelId, retryCount + 1, onQueueUpdate);
-        }
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || response.statusText);
-      }
-
-      this.recordUsage(modelId);
-      const data = await response.json();
-      return this.validateAndParseResponse(data);
-
-    } catch (error) {
-      console.error(`❌ Request failed:`, error);
-      throw error;
-    }
-  }
-
-  // Validate and parse API response
-  validateAndParseResponse(data) {
-    // Check for API error in response
-    if (data.error) {
-      console.error('🚨 API returned error:', data.error);
-      throw new Error(`Gemini API Error: ${data.error.message || 'Unknown error'}`);
-    }
-
-    // Validate response structure
-    if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
-      console.error('🚨 Invalid response structure:', data);
-      throw new Error("Invalid response from Gemini API. No candidates found.");
-    }
-
-    const candidate = data.candidates[0];
-    if (!candidate.content || !candidate.content.parts || !Array.isArray(candidate.content.parts)) {
-      console.error('🚨 Invalid candidate structure:', candidate);
-      throw new Error("Invalid response structure from Gemini API.");
-    }
-
-    const text = candidate.content.parts[0]?.text;
-    if (!text || typeof text !== 'string') {
-      console.error('🚨 No text content in response:', candidate);
-      throw new Error("No text content received from Gemini API.");
-    }
-
-    console.log('📝 Extracted text content:', text.substring(0, 200) + '...');
-    return text;
-  }
-
-  // Calculate exponential backoff delay
-  calculateBackoffDelay(retryCount) {
-    return Math.min(this.baseDelay * Math.pow(2, retryCount) + Math.random() * 1000, 30000);
-  }
-
-  // Sleep utility
-  sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  // Enhanced JSON extraction and parsing
-  extractAndParseJSON(text) {
-    console.log('🔍 Attempting to extract JSON from response...');
-
-    // Try to find JSON object in the text
-    const jsonPatterns = [
-      /\{[\s\S]*\}/,  // Standard JSON object
-      /```json\s*(\{[\s\S]*?\})\s*```/,  // JSON in code blocks
-      /```\s*(\{[\s\S]*?\})\s*```/,  // JSON in generic code blocks
-    ];
-
-    let jsonText = null;
-    for (const pattern of jsonPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        jsonText = match[1] || match[0];
-        console.log('✅ Found JSON pattern:', jsonText.substring(0, 100) + '...');
-        break;
-      }
-    }
-
-    if (!jsonText) {
-      console.error('❌ No JSON object found in response:', text);
-      throw new Error("Could not find JSON object in AI response. The AI may have returned an unexpected format.");
-    }
-
-    // Clean and parse JSON
-    try {
-      // First attempt: direct parsing
-      const parsed = JSON.parse(jsonText);
-      console.log('✅ Successfully parsed JSON on first attempt');
-      return this.validateParsedData(parsed);
-    } catch (firstError) {
-      console.log('⚠️ First parse attempt failed, trying cleanup...', firstError.message);
-
-      try {
-        // Second attempt: clean up common issues
-        const cleaned = jsonText
-          .replace(/'\s*:\s*'/g, '": "')  // Replace single quotes around keys/values
-          .replace(/([{[,])\s*'([^']+?)'\s*(?=[:,\]}])/g, '$1"$2"')  // Replace single quotes with double quotes
-          .replace(/,(\s*[}\]])/g, "$1")  // Remove trailing commas
-          .replace(/\n/g, ' ')  // Remove newlines
-          .replace(/\t/g, ' ')  // Remove tabs
-          .replace(/\s+/g, ' ')  // Normalize whitespace
-          .trim();
-
-        const parsed = JSON.parse(cleaned);
-        console.log('✅ Successfully parsed JSON after cleanup');
-        return this.validateParsedData(parsed);
-      } catch (secondError) {
-        console.error('❌ JSON parsing failed after cleanup:', secondError.message);
-        console.error('🔍 Problematic JSON text:', jsonText);
-        throw new Error(`Failed to parse AI response as JSON: ${secondError.message}. Please try again.`);
-      }
-    }
-  }
-
-  // Validate parsed data structure
-  validateParsedData(data) {
-    console.log('🔍 Validating parsed data structure...');
-
-    // Ensure required fields exist with fallbacks
-    const validated = {
-      name: data.name || "Untitled Startup",
-      tagline: data.tagline || "Transforming ideas into reality",
-      elevator_pitch: data.elevator_pitch || data.description || "An innovative startup solution.",
-      problem: data.problem || "A significant market problem that needs solving.",
-      solution: data.solution || "An innovative solution to address the problem.",
-      target_audience: {
-        description: data.target_audience?.description || "General consumers and businesses",
-        segments: Array.isArray(data.target_audience?.segments)
-          ? data.target_audience.segments
-          : ["Early adopters", "Tech-savvy users", "Business professionals"]
-      },
-      unique_value_proposition: data.unique_value_proposition || data.uvp || "Unique value in the market",
-      landing_copy: {
-        headline: data.landing_copy?.headline || data.name || "Welcome to the Future",
-        subheadline: data.landing_copy?.subheadline || data.tagline || "Innovation at your fingertips",
-        call_to_action: data.landing_copy?.call_to_action || "Get Started Today"
-      },
-      industry: data.industry || "Technology",
-      colors: {
-        primary: data.colors?.primary || "#3B82F6",
-        secondary: data.colors?.secondary || "#8B5CF6",
-        accent: data.colors?.accent || "#06B6D4",
-        neutral: data.colors?.neutral || "#6B7280"
-      },
-      logo_ideas: Array.isArray(data.logo_ideas)
-        ? data.logo_ideas
-        : ["Modern minimalist design", "Tech-inspired icon", "Professional wordmark"]
-    };
-
-    console.log('✅ Data validation complete');
-    return validated;
-  }
-}
-
-const CustomModelSelector = ({ selectedModel, onSelect }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = (node) => {
-    // Simple ref callback to handle simple click outside availability if needed, 
-    // but for now relying on onBlur or a backdrop is safer for a quick implementation 
-    // or just a backdrop div.
-  };
-
-  // Close when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isOpen && !event.target.closest('.custom-model-selector')) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  const selected = MODELS[selectedModel] || MODELS['auto'];
-
-  return (
-    <div className="relative mb-8 z-30 custom-model-selector">
-      <label className="text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)] mb-2 block pl-1">
-        Select Brain Power
-      </label>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className={`w-full flex items-center justify-between bg-[var(--bg-secondary)] text-[var(--text-primary)] border transition-all duration-300 rounded-xl px-4 py-3.5 font-medium shadow-sm hover:shadow-md
-            ${isOpen ? 'border-[var(--accent-primary)] ring-2 ring-[var(--accent-primary)]/20' : 'border-[var(--border-secondary)] hover:border-[var(--accent-primary)]'}
-          `}
-        >
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">{selected.name.split(' ')[0]}</span>
-            <span className="text-[15px]">{selected.name.substring(selected.name.indexOf(' ') + 1)}</span>
-          </div>
-          <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-            className="text-[var(--text-tertiary)]"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-            </svg>
-          </motion.div>
-        </button>
-
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.98 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="absolute top-full left-0 right-0 mt-2 bg-[var(--bg-elevated)] border border-[var(--border-primary)] rounded-xl shadow-2xl overflow-hidden z-50 backdrop-blur-xl"
-            >
-              <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-1.5 space-y-1">
-                {Object.values(MODELS).map((model) => {
-                  const isSelected = selectedModel === model.id;
-                  return (
-                    <button
-                      key={model.id}
-                      type="button"
-                      onClick={() => {
-                        onSelect(model.id);
-                        setIsOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-all duration-200 group
-                        ${isSelected
-                          ? 'bg-[var(--accent-primary)] text-white shadow-md'
-                          : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] hover:translate-x-1'
-                        }
-                      `}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <span className="text-lg">{model.name.split(' ')[0]}</span>
-                        <span className={`font-medium ${isSelected ? 'text-white' : 'text-[var(--text-primary)]'}`}>
-                          {model.name.substring(model.name.indexOf(' ') + 1)}
-                        </span>
-                      </div>
-
-                      {isSelected && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="bg-white/20 p-1 rounded-full"
-                        >
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </motion.div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-};
+import { GeminiAPIManager } from "../utils/geminiApi";
+import CustomModelSelector from "./ModelSelector";
+import PitchDetails from "./PitchDetails";
+import CodePreview from "./CodePreview";
 
 export default function PitchForm({ user, onNavigate }) {
   const [prompt, setPrompt] = useState("");
@@ -456,6 +48,50 @@ export default function PitchForm({ user, onNavigate }) {
     setShowPreview(false);
   };
 
+  function showNotification(message, type) {
+    const el = document.createElement("div");
+
+    // Enhanced notification styling with support for warning type
+    let statusClass, icon;
+    switch (type) {
+      case "success":
+        statusClass = "status-success";
+        icon = "✅";
+        break;
+      case "warning":
+        statusClass = "bg-yellow-100 text-yellow-800 border-yellow-300";
+        icon = "⚠️";
+        break;
+      case "error":
+      default:
+        statusClass = "status-error";
+        icon = "❌";
+        break;
+    }
+
+    el.className = `fixed top-4 right-4 px-6 py-4 rounded-xl shadow-2xl z-50 font-semibold backdrop-blur-sm border animate-fade-in-right ${statusClass}`;
+    el.innerHTML = `
+      <div class="flex items-center">
+        <span class="mr-3 text-lg">${icon}</span>
+        <span>${message}</span>
+        <button class="ml-4 text-lg opacity-70 hover:opacity-100 transition-opacity" onclick="this.parentElement.parentElement.remove()">×</button>
+      </div>
+    `;
+    document.body.appendChild(el);
+
+    // Auto-remove after delay (longer for errors and warnings)
+    const delay = type === "error" || type === "warning" ? 6000 : 4000;
+    setTimeout(() => {
+      if (el.parentNode) {
+        el.style.opacity = "0";
+        el.style.transform = "translateX(100%)";
+        setTimeout(() => {
+          if (el.parentNode) el.remove();
+        }, 300);
+      }
+    }, delay);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
@@ -477,12 +113,8 @@ export default function PitchForm({ user, onNavigate }) {
 
       // Step 1: Get Pitch Data
       console.log('📊 Step 1: Generating pitch data...');
-      const requestBody = {
-        contents: [
-          {
-            parts: [
-              {
-                text: `
+      
+      const pitchPrompt = `
 ACT AS A PROFESSIONAL STARTUP CONSULTANT. Generate a comprehensive startup pitch package from this idea: "${prompt}"
 
 Return ONLY valid JSON with this exact structure:
@@ -511,12 +143,21 @@ Return ONLY valid JSON with this exact structure:
   },
   "logo_ideas": ["creative idea 1", "creative idea 2", "creative idea 3"]
 }
+`;
 
-IMPORTANT: Return ONLY the JSON object, no other text.`,
+      const requestBody = {
+        contents: [
+          {
+            parts: [
+              {
+                text: pitchPrompt,
               },
             ],
           },
         ],
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
       };
 
       const responseText = await apiManager.makeRequest(requestBody, apiKey, selectedModel, 0, setQueueStatus);
@@ -726,391 +367,14 @@ Return ONLY complete HTML code:`;
 </html>`;
   }
 
-  function showNotification(message, type) {
-    const el = document.createElement("div");
-
-    // Enhanced notification styling with support for warning type
-    let statusClass, icon;
-    switch (type) {
-      case "success":
-        statusClass = "status-success";
-        icon = "✅";
-        break;
-      case "warning":
-        statusClass = "bg-yellow-100 text-yellow-800 border-yellow-300";
-        icon = "⚠️";
-        break;
-      case "error":
-      default:
-        statusClass = "status-error";
-        icon = "❌";
-        break;
-    }
-
-    el.className = `fixed top-4 right-4 px-6 py-4 rounded-xl shadow-2xl z-50 font-semibold backdrop-blur-sm border animate-fade-in-right ${statusClass}`;
-    el.innerHTML = `
-      <div class="flex items-center">
-        <span class="mr-3 text-lg">${icon}</span>
-        <span>${message}</span>
-        <button class="ml-4 text-lg opacity-70 hover:opacity-100 transition-opacity" onclick="this.parentElement.parentElement.remove()">×</button>
-      </div>
-    `;
-    document.body.appendChild(el);
-
-    // Auto-remove after delay (longer for errors and warnings)
-    const delay = type === "error" || type === "warning" ? 6000 : 4000;
-    setTimeout(() => {
-      if (el.parentNode) {
-        el.style.opacity = "0";
-        el.style.transform = "translateX(100%)";
-        setTimeout(() => {
-          if (el.parentNode) el.remove();
-        }, 300);
-      }
-    }, delay);
-  }
-
-  // ✅ COMPLETE PITCH DETAILS COMPONENT
-  const RenderPitchDetails = ({ data }) => {
-    if (!data) return null;
-
-    return (
-      <div className="space-y-8 animate-fade-in-up">
-        {/* Startup Header */}
-        <motion.div
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-primary)',
-            boxShadow: 'var(--shadow-card)',
-            backdropFilter: 'var(--glass-backdrop)',
-          }}
-          className="p-4 sm:p-6 lg:p-8 rounded-xl"
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6">
-            <div className="mb-4 sm:mb-0">
-              <h2
-                style={{ background: 'var(--gradient-primary-bold)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-                className="text-2xl sm:text-3xl lg:text-4xl font-primary font-bold mb-2 sm:mb-3"
-              >
-                {data.name}
-              </h2>
-              <p
-                style={{ color: 'var(--text-primary)' }}
-                className="text-lg sm:text-xl font-medium mb-3 sm:mb-4"
-              >
-                {data.tagline}
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span
-                style={{
-                  background: 'var(--gradient-success-subtle)',
-                  color: 'var(--text-success)',
-                  border: '1px solid var(--border-success)',
-                }}
-                className="px-3 py-1.5 rounded-full font-medium text-xs sm:text-sm"
-              >
-                🚀 Active
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
-            <div
-              style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-secondary)' }}
-              className="p-3 sm:p-4 rounded-lg"
-            >
-              <h3 style={{ color: 'var(--text-secondary)' }} className="text-sm font-semibold mb-1">Industry</h3>
-              <p style={{ color: 'var(--text-primary)' }} className="font-medium">{data.industry}</p>
-            </div>
-            <div
-              style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-secondary)' }}
-              className="p-3 sm:p-4 rounded-lg"
-            >
-              <h3 style={{ color: 'var(--text-secondary)' }} className="text-sm font-semibold mb-1">Target Market</h3>
-              <p style={{ color: 'var(--text-primary)' }} className="font-medium">{data.target_audience.description}</p>
-            </div>
-            <div
-              style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-secondary)' }}
-              className="p-3 sm:p-4 rounded-lg"
-            >
-              <h3 style={{ color: 'var(--text-secondary)' }} className="text-sm font-semibold mb-1">Business Model</h3>
-              <p style={{ color: 'var(--text-primary)' }} className="font-medium">B2B SaaS</p>
-            </div>
-          </div>
-
-          {/* Elevator Pitch */}
-          <div
-            style={{
-              background: 'var(--bg-secondary)',
-              borderLeft: '4px solid var(--accent-primary)',
-            }}
-            className="p-4 sm:p-6 rounded-r-lg"
-          >
-            <h3 style={{ color: 'var(--text-primary)' }} className="text-lg font-bold mb-2">Elevator Pitch</h3>
-            <p style={{ color: 'var(--text-secondary)' }} className="italic leading-relaxed">
-              "{data.elevator_pitch}"
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Problem & Solution Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-          <motion.div
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-primary)',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-            className="p-4 sm:p-6 rounded-xl relative overflow-hidden group hover:shadow-lg transition-all"
-            whileHover={{ y: -5 }}
-          >
-            <div
-              style={{ background: 'var(--accent-error)' }}
-              className="absolute top-0 left-0 w-1 h-full opacity-50 group-hover:opacity-100 transition-opacity"
-            />
-            <div className="flex items-center space-x-3 mb-4">
-              <span className="text-2xl sm:text-3xl">⚠️</span>
-              <h3 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold">The Problem</h3>
-            </div>
-            <p style={{ color: 'var(--text-secondary)' }} className="leading-relaxed">
-              {data.problem}
-            </p>
-          </motion.div>
-
-          <motion.div
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-primary)',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-            className="p-4 sm:p-6 rounded-xl relative overflow-hidden group hover:shadow-lg transition-all"
-            whileHover={{ y: -5 }}
-          >
-            <div
-              style={{ background: 'var(--accent-success)' }}
-              className="absolute top-0 right-0 w-1 h-full opacity-50 group-hover:opacity-100 transition-opacity"
-            />
-            <div className="flex items-center space-x-3 mb-4">
-              <span className="text-2xl sm:text-3xl">💡</span>
-              <h3 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold">The Solution</h3>
-            </div>
-            <p style={{ color: 'var(--text-secondary)' }} className="leading-relaxed">
-              {data.solution}
-            </p>
-          </motion.div>
-        </div>
-
-        {/* Unique Value Proposition */}
-        <motion.div
-          style={{
-            background: 'linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%)',
-            border: '1px solid var(--border-primary)',
-          }}
-          className="p-4 sm:p-8 rounded-xl text-center relative overflow-hidden"
-          whileHover={{ scale: 1.01 }}
-        >
-          <div
-            style={{
-              background: 'radial-gradient(circle at center, var(--accent-primary-transparent) 0%, transparent 70%)',
-            }}
-            className="absolute inset-0 opacity-20"
-          />
-          <div className="relative z-10">
-            <h3 style={{ color: 'var(--accent-primary)' }} className="text-sm font-bold uppercase tracking-widest mb-3">Unique Value Proposition</h3>
-            <p style={{ color: 'var(--text-primary)' }} className="text-xl sm:text-2xl font-bold leading-tight">
-              {data.unique_value_proposition}
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Brand Identity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-          {/* Logo Concepts */}
-          <motion.div
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-primary)',
-            }}
-            className="p-4 sm:p-6 rounded-xl"
-          >
-            <h3 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold mb-4 flex items-center">
-              <span className="mr-2">🎨</span> Logo Concepts
-            </h3>
-            <div className="space-y-3">
-              {data.logo_ideas.map((idea, index) => (
-                <div
-                  key={index}
-                  style={{
-                    background: 'var(--bg-tertiary)',
-                    border: '1px solid var(--border-secondary)',
-                  }}
-                  className="p-3 rounded-lg flex items-center space-x-3 hover:bg-opacity-80 transition-colors"
-                >
-                  <span
-                    style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)', borderColor: 'var(--border-primary)' }}
-                    className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold border"
-                  >
-                    {index + 1}
-                  </span>
-                  <p style={{ color: 'var(--text-primary)' }}>{idea}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Color Palette */}
-          <motion.div
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-primary)',
-            }}
-            className="p-4 sm:p-6 rounded-xl"
-          >
-            <h3 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold mb-4 flex items-center">
-              <span className="mr-2">🎭</span> Brand Colors
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              {Object.entries(data.colors).map(([name, hex]) => (
-                <div key={name} className="space-y-2 group cursor-pointer">
-                  <div
-                    className="h-16 w-full rounded-lg shadow-md border border-[var(--border-secondary)] transition-transform transform group-hover:scale-105 relative overflow-hidden"
-                    style={{ backgroundColor: hex }}
-                  >
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all" />
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span style={{ color: 'var(--text-secondary)' }} className="text-sm capitalize font-medium">{name}</span>
-                    <span style={{ color: 'var(--text-tertiary)' }} className="text-xs font-mono bg-opacity-10 px-2 py-1 rounded">
-                      {hex}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Target Audience */}
-        <motion.div
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-primary)',
-          }}
-          className="p-4 sm:p-6 lg:p-8 rounded-xl"
-        >
-          <div className="flex items-center space-x-3 mb-6">
-            <span className="text-2xl sm:text-3xl">👥</span>
-            <div>
-              <h3 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold">Target Audience</h3>
-              <p style={{ color: 'var(--text-secondary)' }} className="text-sm">Who are we building for?</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-            <div>
-              <h4 style={{ color: 'var(--text-primary)' }} className="font-semibold mb-3">Primary Segment</h4>
-              <p style={{ color: 'var(--text-secondary)' }} className="leading-relaxed mb-4">
-                {data.target_audience.description}
-              </p>
-            </div>
-            <div>
-              <h4 style={{ color: 'var(--text-primary)' }} className="font-semibold mb-3">Key Segments</h4>
-              <div className="flex flex-wrap gap-2">
-                {data.target_audience.segments.map((segment, index) => (
-                  <span
-                    key={index}
-                    style={{
-                      background: 'var(--bg-tertiary)',
-                      color: 'var(--accent-primary)',
-                      border: '1px solid var(--border-secondary)',
-                    }}
-                    className="px-3 py-1.5 rounded-full text-sm font-medium"
-                  >
-                    {segment}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    );
-  };
-
-  // ✅ CODE DISPLAY COMPONENT
-  const RenderWebsiteCode = ({ code }) => {
-    if (!code) return null;
-
-    return (
-      <div className="animate-fade-in-up">
-        {/* Website Preview Card */}
-        <motion.div
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-primary)',
-            boxShadow: 'var(--shadow-lg)',
-          }}
-          className="rounded-xl overflow-hidden"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="border-b border-[var(--border-secondary)] p-4 flex items-center justify-between bg-[var(--bg-secondary)]">
-            <div className="flex items-center space-x-3">
-              <span className="text-2xl">🌐</span>
-              <h3 style={{ color: 'var(--text-primary)' }} className="font-bold text-lg">Landing Page Generator</h3>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={openPreview}
-                style={{
-                  background: 'var(--accent-primary)',
-                  color: '#ffffff',
-                }}
-                className="px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity flex items-center shadow-lg"
-              >
-                <span className="mr-2">👁️</span> Live Preview
-              </button>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(code);
-                  showNotification("Code copied to clipboard!", "success");
-                }}
-                style={{
-                  background: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-secondary)',
-                }}
-                className="px-4 py-2 rounded-lg text-sm font-semibold hover:bg-opacity-80 transition-colors flex items-center"
-              >
-                <span className="mr-2">📋</span> Copy Code
-              </button>
-            </div>
-          </div>
-
-          <div className="p-0 relative">
-            <pre className="text-sm p-4 overflow-x-auto font-mono text-gray-300 bg-[#1a1b26] leading-relaxed max-h-[500px] overflow-y-auto custom-scrollbar">
-              {code}
-            </pre>
-          </div>
-        </motion.div>
-
-      </div>
-    );
-  };
-
   return (
-    <div className="relative text-[var(--text-primary)] font-sans selection:bg-[var(--accent-primary)] selection:text-white overflow-x-hidden">
+    <div className="relative text-(--text-primary) font-sans selection:bg-(--accent-primary) selection:text-white overflow-x-hidden">
       <div className="relative z-10 w-full">
         {/* Header */}
         <header className="flex justify-between items-center mb-8 sm:mb-12 animate-fade-in-down">
           <div className="flex items-center space-x-3 sm:space-x-4 group cursor-pointer" onClick={() => onNavigate('home')}>
             <div className="relative w-10 h-10 sm:w-12 sm:h-12">
-              <div className="absolute inset-0 bg-[var(--gradient-primary)] rounded-xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute inset-0 bg-(--gradient-primary) rounded-xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity"></div>
               <div
                 style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-primary)' }}
                 className="relative w-full h-full rounded-xl flex items-center justify-center shadow-xl"
@@ -1133,12 +397,12 @@ Return ONLY complete HTML code:`;
             </div>
           </div>
           <div className="flex items-center space-x-3 sm:space-x-4">
-            <LinkButton onClick={() => onNavigate('history')} className="hidden sm:flex text-sm font-medium hover:text-[var(--accent-primary)] transition-colors">
+            <LinkButton onClick={() => onNavigate('history')} className="hidden sm:flex text-sm font-medium hover:text-(--accent-primary) transition-colors">
               <span className="mr-2">📂</span> History
             </LinkButton>
-            <div className="h-8 w-[1px] bg-[var(--border-primary)] hidden sm:block"></div>
-            <div className="flex items-center space-x-3 bg-[var(--bg-secondary)] px-3 py-1.5 rounded-full border border-[var(--border-secondary)]">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold shadow-inner">
+            <div className="h-8 w-px bg-(--border-primary) hidden sm:block"></div>
+            <div className="flex items-center space-x-3 bg-(--bg-secondary) px-3 py-1.5 rounded-full border border-(--border-secondary)">
+              <div className="w-8 h-8 rounded-full bg-linear-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold shadow-inner">
                 {user.email[0].toUpperCase()}
               </div>
               <span className="text-sm font-medium hidden sm:block pr-1" style={{ color: 'var(--text-secondary)' }}>{user.email.split('@')[0]}</span>
@@ -1149,18 +413,18 @@ Return ONLY complete HTML code:`;
         {/* Step Indicator */}
         {!result && (
           <div className="flex justify-center mb-8 animate-fade-in-up">
-            <div className="flex items-center space-x-2 sm:space-x-4 bg-[var(--bg-secondary)] px-4 py-2 rounded-full border border-[var(--border-secondary)]">
-              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-full transition-all ${!loading ? 'bg-[var(--accent-primary)] text-white' : 'text-[var(--text-tertiary)]'}`}>
+            <div className="flex items-center space-x-2 sm:space-x-4 bg-(--bg-secondary) px-4 py-2 rounded-full border border-(--border-secondary)">
+              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-full transition-all ${!loading ? 'bg-(--accent-primary) text-white' : 'text-(--text-tertiary)'}`}>
                 <span>✏️</span>
                 <span className="text-sm font-medium hidden sm:inline">Describe Idea</span>
               </div>
-              <div className="w-6 h-[2px] bg-[var(--border-secondary)]" />
-              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-full transition-all ${loading ? 'bg-[var(--accent-primary)] text-white' : 'text-[var(--text-tertiary)]'}`}>
+              <div className="w-6 h-0.5 bg-(--border-secondary)" />
+              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-full transition-all ${loading ? 'bg-(--accent-primary) text-white' : 'text-(--text-tertiary)'}`}>
                 <span>⚡</span>
                 <span className="text-sm font-medium hidden sm:inline">Generate</span>
               </div>
-              <div className="w-6 h-[2px] bg-[var(--border-secondary)]" />
-              <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-[var(--text-tertiary)]">
+              <div className="w-6 h-0.5 bg-(--border-secondary)" />
+              <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-(--text-tertiary)">
                 <span>✅</span>
                 <span className="text-sm font-medium hidden sm:inline">Review & Save</span>
               </div>
@@ -1173,7 +437,7 @@ Return ONLY complete HTML code:`;
           <div className="text-center mb-10 sm:mb-12">
             {/* Purple Icon */}
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
                 <span className="text-3xl sm:text-4xl">✨</span>
               </div>
             </div>
@@ -1207,7 +471,7 @@ Return ONLY complete HTML code:`;
             opacity: 1
           }}
         >
-          <div className="bg-[var(--bg-primary)] rounded-[1.2rem] sm:rounded-[1.4rem] p-4 sm:p-8">
+          <div className="bg-(--bg-primary) rounded-[1.2rem] sm:rounded-[1.4rem] p-4 sm:p-8">
             <form onSubmit={handleSubmit} className="space-y-5">
               <CustomModelSelector selectedModel={selectedModel} onSelect={setSelectedModel} />
 
@@ -1221,14 +485,14 @@ Return ONLY complete HTML code:`;
 
               {/* Textarea */}
               <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                <div className="absolute -inset-1 bg-linear-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
                 <div className="relative">
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     maxLength={5000}
                     placeholder="I want to build an AI-powered fitness app that creates personalized workout plans with real-time form correction using computer vision, targeting busy professionals..."
-                    className="w-full h-32 sm:h-36 bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-primary)] rounded-xl px-4 py-4 sm:px-5 sm:py-4 text-base focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none transition-all placeholder:text-[var(--text-disabled)]"
+                    className="w-full h-32 sm:h-36 bg-(--bg-secondary) text-(--text-primary) border border-(--border-primary) rounded-xl px-4 py-4 sm:px-5 sm:py-4 text-base focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none transition-all placeholder:text-(--text-disabled)"
                     disabled={loading}
                   />
                 </div>
@@ -1338,12 +602,12 @@ Return ONLY complete HTML code:`;
             >
               {/* Tabs */}
               <div className="flex justify-center mb-8">
-                <div className="bg-[var(--bg-secondary)] p-1.5 rounded-xl border border-[var(--border-secondary)] inline-flex shadow-lg relative z-10">
+                <div className="bg-(--bg-secondary) p-1.5 rounded-xl border border-(--border-secondary) inline-flex shadow-lg relative z-10">
                   <button
                     onClick={() => setActiveTab("pitch")}
                     className={`px-6 sm:px-8 py-2.5 rounded-lg text-sm sm:text-base font-semibold transition-all duration-300 flex items-center space-x-2 ${activeTab === "pitch"
-                      ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-md transform scale-105"
-                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                      ? "bg-(--bg-elevated) text-(--text-primary) shadow-md transform scale-105"
+                      : "text-(--text-secondary) hover:text-(--text-primary) hover:bg-(--bg-tertiary)"
                       }`}
                   >
                     <span>📊</span>
@@ -1352,8 +616,8 @@ Return ONLY complete HTML code:`;
                   <button
                     onClick={() => setActiveTab("website")}
                     className={`px-6 sm:px-8 py-2.5 rounded-lg text-sm sm:text-base font-semibold transition-all duration-300 flex items-center space-x-2 ${activeTab === "website"
-                      ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-md transform scale-105"
-                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                      ? "bg-(--bg-elevated) text-(--text-primary) shadow-md transform scale-105"
+                      : "text-(--text-secondary) hover:text-(--text-primary) hover:bg-(--bg-tertiary)"
                       }`}
                   >
                     <span>🌐</span>
@@ -1370,19 +634,22 @@ Return ONLY complete HTML code:`;
                 transition={{ duration: 0.4 }}
               >
                 {activeTab === "pitch" ? (
-                  <RenderPitchDetails data={result} />
+                  <PitchDetails 
+                    data={result} 
+                    onUpdate={setResult} 
+                  />
                 ) : (
-                  <RenderWebsiteCode code={landingCode} />
+                  <CodePreview code={landingCode} onOpenPreview={openPreview} onShowNotification={showNotification} />
                 )}
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
         {showPreview && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
             <div
               style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-primary)' }}
-              className="w-full h-[90vh] max-w-7xl rounded-2xl overflow-hidden shadow-2xl flex flex-col animate-scale-in relative z-[101]"
+              className="w-full h-[90vh] max-w-7xl rounded-2xl overflow-hidden shadow-2xl flex flex-col animate-scale-in relative z-101"
             >
               <div
                 style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-secondary)' }}
