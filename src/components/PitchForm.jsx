@@ -8,43 +8,49 @@ import LogoIcon from "../assets/logo.svg";
 import { APIRequestHelper, checkNetworkStatus, logNetworkDiagnostics } from "../utils/networkUtils";
 
 // API Rate Limiting and Request Queue Management
+const MODELS = {
+  "auto": { id: "auto", name: "✨ Auto (Smart Select)" },
+  "gemini-3-flash": { id: "gemini-3-flash", name: "⚡ Gemini 3.0 Flash (Best)" },
+  "gemini-2.5-flash": { id: "gemini-2.5-flash", name: "🚀 Gemini 2.5 Flash" },
+  "gemini-2.5-flash-lite": { id: "gemini-2.5-flash-lite", name: "💨 Gemini 2.5 Flash Lite" },
+  "gemma-3-27b": { id: "gemma-3-27b", name: "🧠 Gemma 3 27B" },
+  "gemma-3-12b": { id: "gemma-3-12b", name: "🤖 Gemma 3 12B" },
+};
+
 class GeminiAPIManager {
   constructor() {
-    this.requestQueue = [];
+    this.queue = [];
     this.isProcessing = false;
-    this.lastRequestTime = 0;
-    this.minRequestInterval = 1000; // 1 second between requests
-    this.maxRetries = 3;
-    this.baseDelay = 1000; // Base delay for exponential backoff
-
-    // Rate limiting: 2 requests per minute
-    this.requestTimestamps = [];
-    this.maxRequestsPerMinute = 2;
-    this.rateLimitWindow = 60000; // 1 minute in milliseconds
+    this.maxRetries = 5;
+    this.rateLimits = {
+      "gemini-3-flash": { rpm: 1, window: 60000 },
+      "gemini-2.5-flash": { rpm: 5, window: 60000 },
+      "default": { rpm: 2, window: 60000 }
+    };
   }
 
-  // Check if rate limit is exceeded
-  checkRateLimit() {
+  // Get locally stored usage timestamp to enforce "1 user 1 minute" rule for high-end models
+  canMakeLocalRequest(modelId) {
+    if (modelId === 'auto') return true;
+
+    const lastUsageKey = `pitchcraft_last_usage_${modelId}`;
+    const lastUsage = localStorage.getItem(lastUsageKey);
     const now = Date.now();
 
-    // Remove timestamps older than 1 minute
-    this.requestTimestamps = this.requestTimestamps.filter(
-      timestamp => now - timestamp < this.rateLimitWindow
-    );
-
-    // Check if we've exceeded the rate limit
-    if (this.requestTimestamps.length >= this.maxRequestsPerMinute) {
-      const oldestRequest = Math.min(...this.requestTimestamps);
-      const timeUntilReset = this.rateLimitWindow - (now - oldestRequest);
-      throw new Error(
-        `Rate limit exceeded. You can only make ${this.maxRequestsPerMinute} requests per minute. ` +
-        `Please wait ${Math.ceil(timeUntilReset / 1000)} seconds before trying again.`
-      );
+    // Specific rule: 1 user 1 min for gemini-3-flash
+    if (modelId === 'gemini-3-flash') {
+      if (lastUsage && (now - parseInt(lastUsage)) < 60000) {
+        const remaining = Math.ceil((60000 - (now - parseInt(lastUsage))) / 1000);
+        throw new Error(`Wait ${remaining}s before reusing ${MODELS[modelId].name}. Rate limit: 1/min.`);
+      }
     }
-
-    // Add current timestamp
-    this.requestTimestamps.push(now);
     return true;
+  }
+
+  recordUsage(modelId) {
+    if (modelId !== 'auto') {
+      localStorage.setItem(`pitchcraft_last_usage_${modelId}`, Date.now().toString());
+    }
   }
 
   // Validate API key format and availability
@@ -105,119 +111,65 @@ class GeminiAPIManager {
     }
   }
 
-  // Enhanced request with retry logic and rate limiting
-  async makeRequest(requestBody, apiKey, retryCount = 0) {
-    // Check network connectivity first
+  // Main Entry Point for Request
+  async makeRequest(requestBody, apiKey, modelId = 'auto', retryCount = 0, onQueueUpdate = null) {
+    this.validateApiKey(apiKey);
+    this.canMakeLocalRequest(modelId);
+
     if (!checkNetworkStatus()) {
       logNetworkDiagnostics();
-      throw new Error("No internet connection. Please check your network and try again.");
+      throw new Error("No internet connection.");
     }
 
-    // Log network diagnostics on first attempt
-    if (retryCount === 0) {
-      logNetworkDiagnostics();
+    // Resolve Model ID
+    let targetModel = modelId;
+    if (modelId === 'auto') {
+      targetModel = 'gemini-2.5-flash';
     }
 
-    this.validateApiKey(apiKey);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`;
+    return this._executeRequestWithRetry(url, requestBody, targetModel, retryCount, onQueueUpdate);
+  }
 
-    // Check rate limiting (only on first attempt, not on retries)
-    if (retryCount === 0) {
-      this.checkRateLimit();
-    }
-
-    // Rate limiting: ensure minimum interval between requests
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-    if (timeSinceLastRequest < this.minRequestInterval) {
-      await this.sleep(this.minRequestInterval - timeSinceLastRequest);
-    }
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  async _executeRequestWithRetry(url, requestBody, modelId, retryCount, onQueueUpdate) {
     const requestOptions = {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "PitchCraft/1.0"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestBody),
     };
 
     try {
-      console.log(`0 Making Gemini API request (attempt ${retryCount + 1}/${this.maxRetries + 1})`);
-      console.log('📤 Request payload:', JSON.stringify(requestBody, null, 2));
-
-      this.lastRequestTime = Date.now();
-
-      // Log request details for debugging
-      APIRequestHelper.logRequestDetails(url, requestOptions);
+      console.log(`🚀 Sending request to ${modelId} (Attempt ${retryCount + 1})`);
 
       const response = await fetch(url, requestOptions);
 
-      console.log(`📥 Response status: ${response.status} ${response.statusText}`);
-
-      // Log response details for debugging
-      APIRequestHelper.logRequestDetails(url, requestOptions, response);
-
-      // Handle different HTTP status codes
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('❌ API Error Response:', errorData);
-
         if (response.status === 429) {
-          // Rate limit exceeded - implement exponential backoff
-          if (retryCount < this.maxRetries) {
-            const delay = this.calculateBackoffDelay(retryCount);
-            console.log(`⏳ Rate limited. Retrying in ${delay}ms...`);
-            await this.sleep(delay);
-            return this.makeRequest(requestBody, apiKey, retryCount + 1);
-          } else {
-            throw new Error("Rate limit exceeded. Please try again in a few minutes. Consider upgrading your API quota if this persists.");
+          console.warn(`⏳ Rate limit hit for ${modelId}. Entering waiting list...`);
+
+          if (retryCount >= this.maxRetries) {
+            throw new Error("All slots are currently full. Please try a different model or wait a few minutes.");
           }
-        } else if (response.status === 403) {
-          throw new Error("API key is invalid or doesn't have sufficient permissions. Please check your Gemini API key.");
-        } else if (response.status === 400) {
-          throw new Error(`Invalid request: ${errorData.error?.message || 'Bad request format'}`);
-        } else if (response.status >= 500) {
-          // Server error - retry with backoff
-          if (retryCount < this.maxRetries) {
-            const delay = this.calculateBackoffDelay(retryCount);
-            console.log(`🔄 Server error. Retrying in ${delay}ms...`);
-            await this.sleep(delay);
-            return this.makeRequest(requestBody, apiKey, retryCount + 1);
-          } else {
-            throw new Error("Gemini API is temporarily unavailable. Please try again later.");
+
+          const waitTime = Math.min(2000 * Math.pow(2, retryCount), 15000);
+
+          if (onQueueUpdate) {
+            onQueueUpdate(`High traffic. Waiting for open slot... (Queue #${this.maxRetries - retryCount})`);
           }
-        } else {
-          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          return this._executeRequestWithRetry(url, requestBody, modelId, retryCount + 1, onQueueUpdate);
         }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || response.statusText);
       }
 
+      this.recordUsage(modelId);
       const data = await response.json();
-      console.log('✅ Raw API Response:', JSON.stringify(data, null, 2));
-
       return this.validateAndParseResponse(data);
 
     } catch (error) {
-      console.error(`❌ Request failed (attempt ${retryCount + 1}):`, error);
-
-      // Log error details for debugging
-      APIRequestHelper.logRequestDetails(url, requestOptions, null, error);
-
-      // Network errors or other non-HTTP errors
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        // Log network diagnostics on network errors
-        logNetworkDiagnostics();
-
-        if (retryCount < this.maxRetries) {
-          const delay = this.calculateBackoffDelay(retryCount);
-          console.log(`🌐 Network error. Retrying in ${delay}ms...`);
-          await this.sleep(delay);
-          return this.makeRequest(requestBody, apiKey, retryCount + 1);
-        } else {
-          throw new Error("Network connection failed. Please check your internet connection and try again.");
-        }
-      }
-
+      console.error(`❌ Request failed:`, error);
       throw error;
     }
   }
@@ -359,8 +311,116 @@ class GeminiAPIManager {
   }
 }
 
+const CustomModelSelector = ({ selectedModel, onSelect }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = (node) => {
+    // Simple ref callback to handle simple click outside availability if needed, 
+    // but for now relying on onBlur or a backdrop is safer for a quick implementation 
+    // or just a backdrop div.
+  };
+
+  // Close when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isOpen && !event.target.closest('.custom-model-selector')) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const selected = MODELS[selectedModel] || MODELS['auto'];
+
+  return (
+    <div className="relative mb-8 z-30 custom-model-selector">
+      <label className="text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)] mb-2 block pl-1">
+        Select Brain Power
+      </label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className={`w-full flex items-center justify-between bg-[var(--bg-secondary)] text-[var(--text-primary)] border transition-all duration-300 rounded-xl px-4 py-3.5 font-medium shadow-sm hover:shadow-md
+            ${isOpen ? 'border-[var(--accent-primary)] ring-2 ring-[var(--accent-primary)]/20' : 'border-[var(--border-secondary)] hover:border-[var(--accent-primary)]'}
+          `}
+        >
+          <div className="flex items-center space-x-2">
+            <span className="text-lg">{selected.name.split(' ')[0]}</span>
+            <span className="text-[15px]">{selected.name.substring(selected.name.indexOf(' ') + 1)}</span>
+          </div>
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+            className="text-[var(--text-tertiary)]"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+            </svg>
+          </motion.div>
+        </button>
+
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute top-full left-0 right-0 mt-2 bg-[var(--bg-elevated)] border border-[var(--border-primary)] rounded-xl shadow-2xl overflow-hidden z-50 backdrop-blur-xl"
+            >
+              <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-1.5 space-y-1">
+                {Object.values(MODELS).map((model) => {
+                  const isSelected = selectedModel === model.id;
+                  return (
+                    <button
+                      key={model.id}
+                      type="button"
+                      onClick={() => {
+                        onSelect(model.id);
+                        setIsOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-all duration-200 group
+                        ${isSelected
+                          ? 'bg-[var(--accent-primary)] text-white shadow-md'
+                          : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] hover:translate-x-1'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className="text-lg">{model.name.split(' ')[0]}</span>
+                        <span className={`font-medium ${isSelected ? 'text-white' : 'text-[var(--text-primary)]'}`}>
+                          {model.name.substring(model.name.indexOf(' ') + 1)}
+                        </span>
+                      </div>
+
+                      {isSelected && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="bg-white/20 p-1 rounded-full"
+                        >
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </motion.div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
 export default function PitchForm({ user, onNavigate }) {
   const [prompt, setPrompt] = useState("");
+  const [selectedModel, setSelectedModel] = useState("auto");
+  const [queueStatus, setQueueStatus] = useState(null);
   const [result, setResult] = useState(null);
   const [landingCode, setLandingCode] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -403,6 +463,7 @@ export default function PitchForm({ user, onNavigate }) {
     setLandingCode(null);
     setPreviewUrl("");
     setShowPreview(false);
+    setQueueStatus(null);
 
     try {
       console.log('🚀 Starting pitch generation process...');
@@ -458,7 +519,7 @@ IMPORTANT: Return ONLY the JSON object, no other text.`,
         ],
       };
 
-      const responseText = await apiManager.makeRequest(requestBody, apiKey);
+      const responseText = await apiManager.makeRequest(requestBody, apiKey, selectedModel, 0, setQueueStatus);
       const parsed = apiManager.extractAndParseJSON(responseText);
 
       console.log('✅ Pitch data generated successfully');
@@ -533,7 +594,7 @@ Return ONLY complete HTML code:`;
         contents: [{ parts: [{ text: websitePrompt }] }],
       };
 
-      const responseText = await apiManager.makeRequest(requestBody, apiKey);
+      const responseText = await apiManager.makeRequest(requestBody, apiKey, selectedModel, 0, setQueueStatus);
       console.log('✅ Landing page code generated successfully');
       return responseText;
 
@@ -1156,6 +1217,8 @@ Return ONLY complete HTML code:`;
         >
           <div className="bg-[var(--bg-primary)] rounded-[1.2rem] sm:rounded-[1.4rem] p-4 sm:p-8">
             <form onSubmit={handleSubmit} className="space-y-5">
+              <CustomModelSelector selectedModel={selectedModel} onSelect={setSelectedModel} />
+
               {/* Form Label */}
               <div className="flex items-center space-x-2 mb-2">
                 <span className="text-xl">💡</span>
@@ -1242,6 +1305,16 @@ Return ONLY complete HTML code:`;
                       />
                       <span>AI is crafting your startup...</span>
                     </motion.div>
+                  ) : queueStatus ? (
+                    <motion.div
+                      key="queue"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex items-center justify-center space-x-2 text-yellow-500 font-medium"
+                    >
+                      <span className="animate-pulse">⏳</span>
+                      <span>{queueStatus}</span>
+                    </motion.div>
                   ) : (
                     <motion.div
                       key="idle"
@@ -1315,14 +1388,21 @@ Return ONLY complete HTML code:`;
         </AnimatePresence>
         {showPreview && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-            <div className="bg-white w-full h-[90vh] max-w-7xl rounded-2xl overflow-hidden shadow-2xl flex flex-col animate-scale-in relative z-[101]">
-              <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                <h3 className="font-bold text-gray-800 flex items-center">
+            <div
+              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-primary)' }}
+              className="w-full h-[90vh] max-w-7xl rounded-2xl overflow-hidden shadow-2xl flex flex-col animate-scale-in relative z-[101]"
+            >
+              <div
+                style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-secondary)' }}
+                className="p-4 flex justify-between items-center"
+              >
+                <h3 style={{ color: 'var(--text-primary)' }} className="font-bold text-lg flex items-center">
                   <span className="mr-2">📱</span> Live Preview
                 </h3>
                 <button
                   onClick={closePreview}
-                  className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-500 hover:text-gray-800"
+                  className="p-2 rounded-full transition-colors hover:bg-white/10"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   ✕
                 </button>
