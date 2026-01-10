@@ -8,70 +8,36 @@
  * - Performance-optimized CSS transforms for responsive behavior
  * - Maintains original position during scaling to prevent layout shifts
  */
-export const NavButton = ({ 
-  children, 
-  isActive, 
-  onClick, 
-  className = "", 
+export const NavButton = ({
+  children,
+  isActive,
+  onClick,
+  className = "",
   variant = "default",
   disabled = false,
   ariaLabel,
   ariaPressed,
   onKeyDown,
-  ...props 
+  ...props
 }) => {
   const baseClasses = `
-    relative px-3 py-2 sm:px-4 sm:py-2.5 md:px-6 md:py-3 rounded-xl font-semibold text-sm sm:text-base
-    transition-all duration-300 ease-in-out transform-gpu
-    focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white/50
-    focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
-    disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:pointer-events-none
-    overflow-hidden group cursor-pointer select-none
-    min-h-[44px] flex items-center justify-center
-    active:scale-95 active:transition-transform active:duration-150
-    will-change-transform origin-center
+    relative px-4 py-2 rounded-lg font-medium text-sm
+    transition-all duration-200 ease-out
+    focus:outline-none focus:ring-2 focus:ring-primary-500/50 
+    disabled:opacity-50 disabled:cursor-not-allowed
+    flex items-center justify-center gap-2
+    overflow-hidden group
   `;
 
   const variantClasses = {
     default: isActive
-      ? `bg-gradient-to-r from-primary-500 via-primary-600 to-secondary-500 
-         text-white font-bold shadow-2xl scale-105
-         hover:shadow-[0_20px_40px_rgba(59,130,246,0.4)] hover:scale-110 
-         hover:from-primary-600 hover:via-primary-700 hover:to-secondary-600
-         active:scale-100 active:shadow-lg
-         border border-primary-400/30 backdrop-blur-sm
-         ring-2 ring-primary-300/50 ring-offset-2 ring-offset-white/10`
-      : `text-neutral-500 bg-white/50 backdrop-blur-sm border border-white/40
-         opacity-70 hover:opacity-100
-         hover:text-primary-700 hover:bg-white/80 hover:shadow-lg hover:border-primary-300/60
-         hover:scale-108 active:scale-95 active:bg-white/90
-         transition-opacity duration-300`,
+      ? `bg-white/10 text-white shadow-sm border border-white/10`
+      : `text-neutral-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/5`,
 
-    danger: `text-neutral-400 bg-white/50 backdrop-blur-sm border border-white/40
-             opacity-70 hover:opacity-100
-             hover:text-red-600 hover:bg-red-50/80 hover:shadow-lg hover:border-red-300/60
-             hover:scale-108 active:scale-95 active:bg-red-100/80
-             transition-opacity duration-300`,
+    danger: `text-neutral-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/10`,
 
-    mobile: `p-2 min-h-[44px] w-[44px] bg-white/50 backdrop-blur-sm border border-white/40
-             opacity-70 hover:opacity-100
-             hover:bg-neutral-100/80 hover:scale-108 hover:shadow-md
-             active:scale-95 active:bg-neutral-200/80
-             transition-opacity duration-300`,
+    mobile: `p-2 aspect-square text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg border border-transparent`,
   };
-
-  const glowEffect = isActive
-    ? `
-    before:absolute before:inset-0 before:bg-gradient-to-r 
-    before:from-primary-400/30 before:via-primary-500/40 before:to-secondary-400/30 
-    before:opacity-60 before:blur-2xl before:scale-110 before:transition-all before:duration-300
-    hover:before:opacity-80 hover:before:scale-125 hover:before:blur-3xl
-    after:absolute after:inset-0 after:bg-gradient-to-r 
-    after:from-primary-300/20 after:to-secondary-300/20 
-    after:opacity-0 after:blur-xl after:scale-105 after:transition-all after:duration-300
-    hover:after:opacity-100 hover:after:scale-115
-  `
-    : "";
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -85,44 +51,20 @@ export const NavButton = ({
     <button
       onClick={onClick}
       onKeyDown={handleKeyDown}
-      className={`${baseClasses} ${variantClasses[variant]} ${glowEffect} ${className}`}
+      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
       disabled={disabled}
       aria-label={ariaLabel}
       aria-pressed={ariaPressed}
-      role="button"
-      tabIndex={disabled ? -1 : 0}
-      style={{
-        // Ensure smooth scaling without layout shifts
-        transformOrigin: 'center',
-        backfaceVisibility: 'hidden',
-        perspective: '1000px',
-      }}
       {...props}
     >
-      <span className={`relative z-20 flex items-center justify-center gap-1 sm:gap-2 ${
-        isActive 
-          ? 'text-white font-bold drop-shadow-sm' 
-          : 'text-current font-medium'
-      }`}>
+      {/* Active Indicator Dot */}
+      {isActive && variant === 'default' && (
+        <span className="absolute bottom-1.5 w-1 h-1 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)] animate-pulse"></span>
+      )}
+
+      <span className={`relative z-10 flex items-center gap-2 ${isActive && variant === 'default' ? 'mb-0.5' : ''}`}>
         {children}
       </span>
-
-      {/* Enhanced ripple effect overlay with improved performance */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
-        <div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent 
-                        transform -skew-x-12 -translate-x-full group-hover:translate-x-full 
-                        transition-transform duration-700 ease-out will-change-transform"
-        ></div>
-      </div>
-
-      {/* Additional glow layer for active buttons */}
-      {isActive && (
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-0">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-400/10 via-primary-500/20 to-secondary-400/10 
-                         blur-xl scale-150 animate-pulse"></div>
-        </div>
-      )}
     </button>
   );
 };
@@ -136,18 +78,18 @@ export const PrimaryButton = ({ children, onClick, disabled = false, className =
       className={`
         px-8 py-4 font-semibold rounded-xl
         transition-all duration-300 ease-in-out transform
-        ${disabled 
-          ? 'opacity-50 cursor-not-allowed' 
+        ${disabled
+          ? 'opacity-50 cursor-not-allowed'
           : 'hover:scale-105 hover:shadow-xl active:scale-95'
         }
         ${className}
       `}
       style={{
-        background: disabled 
-          ? 'var(--dark-gradient-secondary)' 
+        background: disabled
+          ? 'var(--dark-gradient-secondary)'
           : 'var(--dark-button-primary-bg)',
-        color: disabled 
-          ? 'var(--dark-text-disabled)' 
+        color: disabled
+          ? 'var(--dark-text-disabled)'
           : 'var(--dark-text-primary)',
         border: `1px solid ${disabled ? 'var(--dark-border-tertiary)' : 'var(--dark-border-primary)'}`,
         boxShadow: disabled ? 'none' : 'var(--dark-shadow-md)'
@@ -236,15 +178,15 @@ export const MobileMenuButton = ({ isOpen, onClick, className = "" }) => {
       aria-label={isOpen ? "Close menu" : "Open menu"}
     >
       <div className="w-6 h-6 flex flex-col justify-center items-center">
-        <span 
+        <span
           className={`block w-5 h-0.5 transition-all duration-300 ${isOpen ? 'rotate-45 translate-y-1' : ''}`}
           style={{ backgroundColor: 'currentColor' }}
         />
-        <span 
+        <span
           className={`block w-5 h-0.5 transition-all duration-300 mt-1 ${isOpen ? 'opacity-0' : ''}`}
           style={{ backgroundColor: 'currentColor' }}
         />
-        <span 
+        <span
           className={`block w-5 h-0.5 transition-all duration-300 mt-1 ${isOpen ? '-rotate-45 -translate-y-1' : ''}`}
           style={{ backgroundColor: 'currentColor' }}
         />
@@ -254,16 +196,16 @@ export const MobileMenuButton = ({ isOpen, onClick, className = "" }) => {
 };
 
 // MobileNavItem - For mobile navigation menu items
-export const MobileNavItem = ({ 
-  children, 
-  onClick, 
+export const MobileNavItem = ({
+  children,
+  onClick,
   onKeyDown,
-  active = false, 
+  active = false,
   className = "",
   ariaLabel,
   ariaPressed,
   style = {},
-  ...props 
+  ...props
 }) => {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -289,15 +231,15 @@ export const MobileNavItem = ({
         ${className}
       `}
       style={{
-        background: active 
-          ? 'var(--dark-button-primary-bg)' 
+        background: active
+          ? 'var(--dark-button-primary-bg)'
           : 'var(--dark-glass-subtle)',
-        color: active 
-          ? 'var(--dark-text-primary)' 
+        color: active
+          ? 'var(--dark-text-primary)'
           : 'var(--dark-text-secondary)',
         border: `1px solid ${active ? 'var(--dark-border-primary)' : 'var(--dark-border-subtle)'}`,
-        boxShadow: active 
-          ? 'var(--dark-shadow-md)' 
+        boxShadow: active
+          ? 'var(--dark-shadow-md)'
           : 'var(--dark-shadow-sm)',
         ...style
       }}

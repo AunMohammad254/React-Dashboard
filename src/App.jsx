@@ -3,10 +3,7 @@ import { supabase } from "./lib/supabaseClient";
 import Auth from "./components/Auth";
 import PitchForm from "./components/PitchForm";
 import MyPitches from "./components/MyPitches";
-import {
-  NavButton,
-  MobileNavItem,
-} from "./components/Button";
+import Navbar from "./components/Navbar";
 import LogoIcon from "./assets/logo-icon.svg";
 import "./App.css";
 
@@ -92,205 +89,14 @@ export default function App() {
       }}
     >
       {/* Navigation */}
-      <nav
-        className="rounded-xl pb-2 z-50 backdrop-blur-md border-b sticky top-0 w-full"
-        style={{
-          background: "var(--dark-glass-bg)",
-          borderBottomColor: "var(--dark-border-primary)",
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="flex justify-between items-center h-16 sm:h-20 w-full">
-            {/* Logo Section */}
-            <div className="logo-container animate-fade-in-left shrink-0">
-              <div className="logo-icon floating">
-                <img
-                  src={LogoIcon}
-                  alt="Pitch Crafter"
-                  className="w-6 h-6 sm:w-8 sm:h-8"
-                />
-              </div>
-              <h1
-                className="logo-text text-lg sm:text-xl"
-                style={{ color: "var(--dark-text-primary)" }}
-              >
-                Pitch Crafter
-              </h1>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-2 animate-fade-in-right shrink-0">
-              <div className="flex items-center backdrop-blur-sm rounded-2xl p-1 gap-4">
-                <NavButton
-                  onClick={() => setCurrentView("generate")}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && setCurrentView("generate")
-                  }
-                  isActive={currentView === "generate"}
-                  aria-label="Generate new pitch"
-                  aria-pressed={currentView === "generate"}
-                >
-                  <span className="mr-2">✨</span>
-                  <span>Generate Pitch</span>
-                </NavButton>
-                <NavButton
-                  onClick={() => setCurrentView("my-pitches")}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && setCurrentView("my-pitches")
-                  }
-                  isActive={currentView === "my-pitches"}
-                  aria-label="View my pitches"
-                  aria-pressed={currentView === "my-pitches"}
-                >
-                  <span className="mr-2">📚</span>
-                  <span>My Pitches</span>
-                </NavButton>
-              </div>
-              <div className="w-px h-8 mx-2"></div>
-              <NavButton
-                onClick={() => supabase.auth.signOut()}
-                variant="danger"
-              >
-                👋 Sign Out
-              </NavButton>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <div className=" md:hidden shrink-0">
-              <NavButton
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                variant="mobile"
-                aria-label="Toggle mobile menu"
-              >
-                {mobileMenuOpen ? "✕" : "☰"}
-              </NavButton>
-            </div>
-          </div>
-
-          {/* Mobile Navigation Menu */}
-          {mobileMenuOpen && (
-            <div
-              className="rounded-xl md:hidden mobile-menu border-t backdrop-blur-sm animate-fade-in-down w-full"
-              style={{
-                background: "var(--dark-gradient-primary)",
-                borderTopColor: "var(--dark-border-primary)",
-              }}
-            >
-              <div className="px-3 pt-3 pb-4 space-y-2 w-full">
-                {/* Navigation Section */}
-                <div className="space-y-2 w-full">
-                  <p
-                    className="text-xs font-semibold uppercase tracking-wider px-3 py-1"
-                    style={{ color: "var(--dark-text-secondary)" }}
-                  >
-                    Navigation
-                  </p>
-                  <MobileNavItem
-                    onClick={() => {
-                      setCurrentView("generate");
-                      setMobileMenuOpen(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        setCurrentView("generate");
-                        setMobileMenuOpen(false);
-                      }
-                    }}
-                    active={currentView === "generate"}
-                    ariaLabel="Generate new pitch"
-                    ariaPressed={currentView === "generate"}
-                    className="w-full"
-                  >
-                    <span className="mr-3 text-lg">✨</span>
-                    <div className="flex-1 text-left">
-                      <div className="font-semibold">Generate Pitch</div>
-                      <div
-                        className="text-xs"
-                        style={{
-                          color:
-                            currentView === "generate"
-                              ? "var(--dark-text-primary)"
-                              : "var(--dark-text-tertiary)",
-                        }}
-                      >
-                        Create a new startup pitch
-                      </div>
-                    </div>
-                  </MobileNavItem>
-                  <MobileNavItem
-                    onClick={() => {
-                      setCurrentView("my-pitches");
-                      setMobileMenuOpen(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        setCurrentView("my-pitches");
-                        setMobileMenuOpen(false);
-                      }
-                    }}
-                    active={currentView === "my-pitches"}
-                    ariaLabel="View my pitches"
-                    ariaPressed={currentView === "my-pitches"}
-                    className="w-full"
-                  >
-                    <span className="mr-3 text-lg">📚</span>
-                    <div className="flex-1 text-left">
-                      <div className="font-semibold">My Pitches</div>
-                      <div
-                        className={`text-xs ${
-                          currentView === "my-pitches"
-                            ? "text-black/80"
-                            : "text-neutral-500"
-                        }`}
-                      >
-                        View and manage your pitches
-                      </div>
-                    </div>
-                  </MobileNavItem>
-                </div>
-
-                {/* Account Section */}
-                <div
-                  className="border-t pt-3 mt-3 w-full"
-                  style={{ borderTopColor: "var(--dark-border-primary)" }}
-                >
-                  <p
-                    className="text-xs font-semibold uppercase tracking-wider px-3 py-1 mb-1"
-                    style={{ color: "var(--dark-text-secondary)" }}
-                  >
-                    Account
-                  </p>
-                  <MobileNavItem
-                    onClick={() => {
-                      supabase.auth.signOut();
-                      setMobileMenuOpen(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        supabase.auth.signOut();
-                        setMobileMenuOpen(false);
-                      }
-                    }}
-                    className="w-full"
-                    ariaLabel="Sign out of account"
-                  >
-                    <span className="mr-3 text-lg">👋</span>
-                    <div className="flex-1 text-left">
-                      <div className="font-semibold">Sign Out</div>
-                      <div
-                        className="text-xs"
-                        style={{ color: "var(--dark-text-tertiary)" }}
-                      >
-                        Log out of your account
-                      </div>
-                    </div>
-                  </MobileNavItem>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
+      <Navbar
+        user={user}
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+        onSignOut={() => supabase.auth.signOut()}
+      />
 
       {/* Main Content */}
       <main
@@ -312,7 +118,7 @@ export default function App() {
         ) : !user ? (
           <Auth onAuthSuccess={handleAuthSuccess} />
         ) : (
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 pt-28 sm:pt-32">
             {/* Breadcrumb Navigation */}
             <div className="mb-6 sm:mb-8 animate-fade-in-up w-full">
               <nav className="flex items-center space-x-2 text-sm text-neutral-600 w-full">
@@ -348,7 +154,7 @@ export default function App() {
       </main>
 
       {/* Keyboard Shortcuts Hint */}
-      <div className="fixed bottom-4 left-4 z-50 hidden lg:block">
+      < div className="fixed bottom-4 left-4 z-50 hidden lg:block" >
         <div className="card bg-white/80 backdrop-blur-sm border border-neutral-200 rounded-xl p-3 shadow-lg max-w-xs">
           <div className="text-xs text-neutral-600 space-y-1">
             <div className="font-semibold mb-2">Keyboard Shortcuts:</div>
@@ -378,10 +184,10 @@ export default function App() {
             </div>
           </div>
         </div>
-      </div>
+      </div >
 
       {/* Footer */}
-      <footer className="footer-glass glass-footer mt-12 sm:mt-16 lg:mt-20 w-full">
+      < footer className="footer-glass glass-footer mt-12 sm:mt-16 lg:mt-20 w-full" >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 w-full">
           <div className="text-center w-full">
             <div className="flex justify-center items-center mb-4 sm:mb-6">
@@ -419,7 +225,7 @@ export default function App() {
             </div>
           </div>
         </div>
-      </footer>
-    </div>
+      </footer >
+    </div >
   );
 }
