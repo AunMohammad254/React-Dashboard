@@ -3,6 +3,7 @@ import { supabase } from "./lib/supabaseClient";
 import Auth from "./components/Auth";
 import PitchForm from "./components/PitchForm";
 import MyPitches from "./components/MyPitches";
+import UpdatePassword from "./components/UpdatePassword";
 import Navbar from "./components/Navbar";
 import LogoIcon from "./assets/logo-icon.svg";
 import "./App.css";
@@ -24,7 +25,10 @@ export default function App() {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setCurrentView("update-password");
+      }
       setUser(session?.user ?? null);
       setLoading(false);
     });
@@ -77,7 +81,7 @@ export default function App() {
     );
   }
 
-  if (!user) {
+  if (!user && currentView !== "update-password") {
     return <Auth />;
   }
 
@@ -141,9 +145,19 @@ export default function App() {
               <div key="generate" className="animate-fade-in-up w-full">
                 <PitchForm user={user} onNavigate={setCurrentView} />
               </div>
-            ) : (
+            ) : currentView === "my-pitches" ? (
               <div key="my-pitches" className="animate-fade-in-up w-full">
                 <MyPitches user={user} onNavigate={setCurrentView} />
+              </div>
+            ) : (
+              <div key="update-password" className="animate-fade-in-up w-full">
+                <UpdatePassword onFullfill={() => {
+                  setCurrentView("generate");
+                  // Ensure user is set if session exists
+                  supabase.auth.getSession().then(({ data: { session } }) => {
+                    setUser(session?.user ?? null);
+                  });
+                }} />
               </div>
             )}
           </div>
