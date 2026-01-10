@@ -1,16 +1,16 @@
 import styled from 'styled-components';
 
-const Button = ({ 
-  type = "button", 
-  disabled = false, 
-  onClick, 
-  className = "", 
-  children,
-  ...props 
+const Button = ({
+  type = "button",
+  disabled = false,
+  onClick,
+  className = "",
+  _children,
+  ...props
 }) => {
   return (
     <StyledWrapper className={className}>
-      <button 
+      <button
         type={type}
         disabled={disabled}
         onClick={onClick}

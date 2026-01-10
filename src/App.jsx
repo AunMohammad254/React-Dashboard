@@ -105,52 +105,38 @@ export default function App() {
           background: "transparent",
         }}
       >
-        {loading ? (
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div
-                className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
-                style={{ borderBottomColor: "var(--dark-text-primary)" }}
-              ></div>
-              <p style={{ color: "var(--dark-text-secondary)" }}>Loading...</p>
-            </div>
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 pt-28 sm:pt-32">
+          {/* Breadcrumb Navigation */}
+          <div className="mb-6 sm:mb-8 animate-fade-in-up w-full">
+            <nav className="flex items-center space-x-2 text-sm text-neutral-600 w-full">
+              <img
+                src={LogoIcon}
+                alt="PitchCrafter"
+                className="w-6 h-6 sm:w-8 sm:h-8 shrink-0"
+              />
+              <span className="text-primary-600 font-medium">
+                Pitch Crafter
+              </span>
+              <span>/</span>
+              <span className="font-medium text-neutral-800 truncate">
+                {currentView === "generate" ? "Generate Pitch" : "My Pitches"}
+              </span>
+            </nav>
           </div>
-        ) : !user ? (
-          <Auth onAuthSuccess={handleAuthSuccess} />
-        ) : (
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 pt-28 sm:pt-32">
-            {/* Breadcrumb Navigation */}
-            <div className="mb-6 sm:mb-8 animate-fade-in-up w-full">
-              <nav className="flex items-center space-x-2 text-sm text-neutral-600 w-full">
-                <img
-                  src={LogoIcon}
-                  alt="PitchCrafter"
-                  className="w-6 h-6 sm:w-8 sm:h-8 shrink-0"
-                />
-                <span className="text-primary-600 font-medium">
-                  Pitch Crafter
-                </span>
-                <span>/</span>
-                <span className="font-medium text-neutral-800 truncate">
-                  {currentView === "generate" ? "Generate Pitch" : "My Pitches"}
-                </span>
-              </nav>
-            </div>
 
-            {/* Content with smooth transitions */}
-            <div className="animate-fade-in-up transition-all duration-500 ease-in-out w-full">
-              {currentView === "generate" ? (
-                <div key="generate" className="animate-fade-in-up w-full">
-                  <PitchForm user={user} onNavigate={setCurrentView} />
-                </div>
-              ) : (
-                <div key="my-pitches" className="animate-fade-in-up w-full">
-                  <MyPitches user={user} onNavigate={setCurrentView} />
-                </div>
-              )}
-            </div>
+          {/* Content with smooth transitions */}
+          <div className="animate-fade-in-up transition-all duration-500 ease-in-out w-full">
+            {currentView === "generate" ? (
+              <div key="generate" className="animate-fade-in-up w-full">
+                <PitchForm user={user} onNavigate={setCurrentView} />
+              </div>
+            ) : (
+              <div key="my-pitches" className="animate-fade-in-up w-full">
+                <MyPitches user={user} onNavigate={setCurrentView} />
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </main>
 
       {/* Keyboard Shortcuts Hint */}

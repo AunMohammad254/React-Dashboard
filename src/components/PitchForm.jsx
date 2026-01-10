@@ -15,7 +15,7 @@ class GeminiAPIManager {
     this.minRequestInterval = 1000; // 1 second between requests
     this.maxRetries = 3;
     this.baseDelay = 1000; // Base delay for exponential backoff
-    
+
     // Rate limiting: 2 requests per minute
     this.requestTimestamps = [];
     this.maxRequestsPerMinute = 2;
@@ -25,12 +25,12 @@ class GeminiAPIManager {
   // Check if rate limit is exceeded
   checkRateLimit() {
     const now = Date.now();
-    
+
     // Remove timestamps older than 1 minute
     this.requestTimestamps = this.requestTimestamps.filter(
       timestamp => now - timestamp < this.rateLimitWindow
     );
-    
+
     // Check if we've exceeded the rate limit
     if (this.requestTimestamps.length >= this.maxRequestsPerMinute) {
       const oldestRequest = Math.min(...this.requestTimestamps);
@@ -40,7 +40,7 @@ class GeminiAPIManager {
         `Please wait ${Math.ceil(timeUntilReset / 1000)} seconds before trying again.`
       );
     }
-    
+
     // Add current timestamp
     this.requestTimestamps.push(now);
     return true;
@@ -51,23 +51,23 @@ class GeminiAPIManager {
     if (!apiKey) {
       throw new Error("Gemini API key is missing. Please check your .env file and ensure VITE_GEMINI_API_KEY is set.");
     }
-    
+
     // Handle undefined environment variable (shows as string "undefined")
     if (apiKey === 'undefined' || apiKey === '${import.meta.env.VITE_GEMINI_API_KEY}') {
       throw new Error("Environment variable VITE_GEMINI_API_KEY is not set. Please create a .env file with your Gemini API key.");
     }
-    
+
     // Basic format validation for Google API keys
     if (!apiKey.startsWith('AIza') || apiKey.length < 35) {
       throw new Error("Invalid Gemini API key format. Google API keys should start with 'AIza' and be at least 35 characters long.");
     }
-    
+
     // Check for common placeholder values
     const placeholders = ['your_gemini_api_key_here', 'AIzaSyAcFSJm_B0GVn0VpQDijlQxMpLzfPeiqq8'];
     if (placeholders.includes(apiKey)) {
       throw new Error("Please replace the placeholder API key with your actual Gemini API key.");
     }
-    
+
     return true;
   }
 
@@ -75,12 +75,12 @@ class GeminiAPIManager {
   async checkApiQuota(apiKey) {
     try {
       console.log('🔍 Checking API quota and availability...');
-      
+
       // Make a minimal test request to check quota
       const testRequest = {
         contents: [{ parts: [{ text: "Test" }] }],
       };
-      
+
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
@@ -89,13 +89,13 @@ class GeminiAPIManager {
           body: JSON.stringify(testRequest),
         }
       );
-      
+
       if (response.status === 403) {
         throw new Error("API key is invalid or has insufficient permissions. Please verify your Gemini API key and ensure it has the necessary permissions.");
       } else if (response.status === 429) {
         throw new Error("API quota exceeded. Please wait a few minutes before trying again or consider upgrading your API plan.");
       }
-      
+
       console.log('✅ API quota check passed');
       return true;
     } catch (error) {
@@ -118,12 +118,12 @@ class GeminiAPIManager {
     }
 
     this.validateApiKey(apiKey);
-    
+
     // Check rate limiting (only on first attempt, not on retries)
     if (retryCount === 0) {
       this.checkRateLimit();
     }
-    
+
     // Rate limiting: ensure minimum interval between requests
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
@@ -134,7 +134,7 @@ class GeminiAPIManager {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     const requestOptions = {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
         "User-Agent": "PitchCraft/1.0"
       },
@@ -144,24 +144,24 @@ class GeminiAPIManager {
     try {
       console.log(`���0 Making Gemini API request (attempt ${retryCount + 1}/${this.maxRetries + 1})`);
       console.log('📤 Request payload:', JSON.stringify(requestBody, null, 2));
-      
+
       this.lastRequestTime = Date.now();
-      
+
       // Log request details for debugging
       APIRequestHelper.logRequestDetails(url, requestOptions);
-      
+
       const response = await fetch(url, requestOptions);
 
       console.log(`📥 Response status: ${response.status} ${response.statusText}`);
-      
+
       // Log response details for debugging
       APIRequestHelper.logRequestDetails(url, requestOptions, response);
-      
+
       // Handle different HTTP status codes
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('❌ API Error Response:', errorData);
-        
+
         if (response.status === 429) {
           // Rate limit exceeded - implement exponential backoff
           if (retryCount < this.maxRetries) {
@@ -193,20 +193,20 @@ class GeminiAPIManager {
 
       const data = await response.json();
       console.log('✅ Raw API Response:', JSON.stringify(data, null, 2));
-      
+
       return this.validateAndParseResponse(data);
-      
+
     } catch (error) {
       console.error(`❌ Request failed (attempt ${retryCount + 1}):`, error);
-      
+
       // Log error details for debugging
       APIRequestHelper.logRequestDetails(url, requestOptions, null, error);
-      
+
       // Network errors or other non-HTTP errors
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         // Log network diagnostics on network errors
         logNetworkDiagnostics();
-        
+
         if (retryCount < this.maxRetries) {
           const delay = this.calculateBackoffDelay(retryCount);
           console.log(`🌐 Network error. Retrying in ${delay}ms...`);
@@ -216,7 +216,7 @@ class GeminiAPIManager {
           throw new Error("Network connection failed. Please check your internet connection and try again.");
         }
       }
-      
+
       throw error;
     }
   }
@@ -264,7 +264,7 @@ class GeminiAPIManager {
   // Enhanced JSON extraction and parsing
   extractAndParseJSON(text) {
     console.log('🔍 Attempting to extract JSON from response...');
-    
+
     // Try to find JSON object in the text
     const jsonPatterns = [
       /\{[\s\S]*\}/,  // Standard JSON object
@@ -295,7 +295,7 @@ class GeminiAPIManager {
       return this.validateParsedData(parsed);
     } catch (firstError) {
       console.log('⚠️ First parse attempt failed, trying cleanup...', firstError.message);
-      
+
       try {
         // Second attempt: clean up common issues
         const cleaned = jsonText
@@ -306,7 +306,7 @@ class GeminiAPIManager {
           .replace(/\t/g, ' ')  // Remove tabs
           .replace(/\s+/g, ' ')  // Normalize whitespace
           .trim();
-        
+
         const parsed = JSON.parse(cleaned);
         console.log('✅ Successfully parsed JSON after cleanup');
         return this.validateParsedData(parsed);
@@ -321,7 +321,7 @@ class GeminiAPIManager {
   // Validate parsed data structure
   validateParsedData(data) {
     console.log('🔍 Validating parsed data structure...');
-    
+
     // Ensure required fields exist with fallbacks
     const validated = {
       name: data.name || "Untitled Startup",
@@ -331,8 +331,8 @@ class GeminiAPIManager {
       solution: data.solution || "An innovative solution to address the problem.",
       target_audience: {
         description: data.target_audience?.description || "General consumers and businesses",
-        segments: Array.isArray(data.target_audience?.segments) 
-          ? data.target_audience.segments 
+        segments: Array.isArray(data.target_audience?.segments)
+          ? data.target_audience.segments
           : ["Early adopters", "Tech-savvy users", "Business professionals"]
       },
       unique_value_proposition: data.unique_value_proposition || data.uvp || "Unique value in the market",
@@ -344,12 +344,12 @@ class GeminiAPIManager {
       industry: data.industry || "Technology",
       colors: {
         primary: data.colors?.primary || "#3B82F6",
-        secondary: data.colors?.secondary || "#8B5CF6", 
+        secondary: data.colors?.secondary || "#8B5CF6",
         accent: data.colors?.accent || "#06B6D4",
         neutral: data.colors?.neutral || "#6B7280"
       },
-      logo_ideas: Array.isArray(data.logo_ideas) 
-        ? data.logo_ideas 
+      logo_ideas: Array.isArray(data.logo_ideas)
+        ? data.logo_ideas
         : ["Modern minimalist design", "Tech-inspired icon", "Professional wordmark"]
     };
 
@@ -406,10 +406,10 @@ export default function PitchForm({ user, onNavigate }) {
     try {
       console.log('🚀 Starting pitch generation process...');
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      
+
       // Validate API key before proceeding
       apiManager.validateApiKey(apiKey);
-      
+
       // Check API quota and availability
       await apiManager.checkApiQuota(apiKey);
 
@@ -459,7 +459,7 @@ IMPORTANT: Return ONLY the JSON object, no other text.`,
 
       const responseText = await apiManager.makeRequest(requestBody, apiKey);
       const parsed = apiManager.extractAndParseJSON(responseText);
-      
+
       console.log('✅ Pitch data generated successfully');
       setResult(parsed);
 
@@ -488,7 +488,7 @@ IMPORTANT: Return ONLY the JSON object, no other text.`,
 
       console.log('🎉 Pitch generation completed successfully!');
       showNotification("✅ Pitch + Website Code Generated!", "success");
-      
+
     } catch (err) {
       console.error('❌ Pitch generation failed:', err);
       const errorMessage = err.message || "Something went wrong. Please try again.";
@@ -503,9 +503,8 @@ IMPORTANT: Return ONLY the JSON object, no other text.`,
       console.log('🌐 Generating landing page code...');
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
-      const websitePrompt = `Create a stunning, modern landing page HTML for: ${
-        pitchData.name
-      } - ${pitchData.tagline}
+      const websitePrompt = `Create a stunning, modern landing page HTML for: ${pitchData.name
+        } - ${pitchData.tagline}
 
 Details:
 - Problem: ${pitchData.problem}
@@ -536,7 +535,7 @@ Return ONLY complete HTML code:`;
       const responseText = await apiManager.makeRequest(requestBody, apiKey);
       console.log('✅ Landing page code generated successfully');
       return responseText;
-      
+
     } catch (error) {
       console.error('⚠️ Landing page generation failed, using fallback:', error);
       showNotification("⚠️ Using fallback template for landing page", "warning");
@@ -560,12 +559,10 @@ Return ONLY complete HTML code:`;
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .gradient-bg { background: linear-gradient(135deg, ${
-          colors.primary
-        }20, ${colors.secondary}20); }
-        .hero-gradient { background: linear-gradient(135deg, ${
-          colors.primary
-        }, ${colors.secondary}); }
+        .gradient-bg { background: linear-gradient(135deg, ${colors.primary
+      }20, ${colors.secondary}20); }
+        .hero-gradient { background: linear-gradient(135deg, ${colors.primary
+      }, ${colors.secondary}); }
     </style>
 </head>
 <body class="bg-white">
@@ -574,22 +571,17 @@ Return ONLY complete HTML code:`;
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-linear-to-r from-[${
-                      colors.primary
-                    }] to-[${
-      colors.secondary
-    }] rounded-lg flex items-center justify-center">
+                    <div class="w-10 h-10 bg-linear-to-r from-[${colors.primary
+      }] to-[${colors.secondary
+      }] rounded-lg flex items-center justify-center">
                         <img src={LogoIcon} alt="Pitch Crafter" className="w-6 h-6 sm:w-8 sm:h-8" />
                     </div>
-                    <span class="text-xl font-bold text-gray-900">${
-                      pitchData.name
-                    }</span>
+                    <span class="text-xl font-bold text-gray-900">${pitchData.name
+      }</span>
                 </div>
-                <button class="bg-[${
-                  colors.primary
-                }] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[${
-      colors.secondary
-    }] transition-colors">
+                <button class="bg-[${colors.primary
+      }] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[${colors.secondary
+      }] transition-colors">
                     Get Started
                 </button>
             </div>
@@ -599,20 +591,16 @@ Return ONLY complete HTML code:`;
     <!-- Hero Section -->
     <section class="hero-gradient text-white py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 class="text-5xl font-bold mb-6">${
-              pitchData.landing_copy?.headline || pitchData.name
-            }</h1>
-            <p class="text-xl opacity-90 mb-8 max-w-3xl mx-auto">${
-              pitchData.landing_copy?.subheadline || pitchData.tagline
-            }</p>
+            <h1 class="text-5xl font-bold mb-6">${pitchData.landing_copy?.headline || pitchData.name
+      }</h1>
+            <p class="text-xl opacity-90 mb-8 max-w-3xl mx-auto">${pitchData.landing_copy?.subheadline || pitchData.tagline
+      }</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <button class="bg-white text-[${
-                  colors.primary
-                }] px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg">
-                    ${
-                      pitchData.landing_copy?.call_to_action ||
-                      "Get Started Free"
-                    }
+                <button class="bg-white text-[${colors.primary
+      }] px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg">
+                    ${pitchData.landing_copy?.call_to_action ||
+      "Get Started Free"
+      }
                 </button>
                 <button class="border border-white text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-colors">
                     Learn More
@@ -625,9 +613,8 @@ Return ONLY complete HTML code:`;
     <section class="py-20 bg-white">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-3xl font-bold text-gray-900 mb-6">The Problem We Solve</h2>
-            <p class="text-lg text-gray-600 leading-relaxed">${
-              pitchData.problem
-            }</p>
+            <p class="text-lg text-gray-600 leading-relaxed">${pitchData.problem
+      }</p>
         </div>
     </section>
 
@@ -635,9 +622,8 @@ Return ONLY complete HTML code:`;
     <section class="py-20 gradient-bg">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-3xl font-bold text-gray-900 mb-6">Our Innovative Solution</h2>
-            <p class="text-lg text-gray-600 leading-relaxed">${
-              pitchData.solution
-            }</p>
+            <p class="text-lg text-gray-600 leading-relaxed">${pitchData.solution
+      }</p>
         </div>
     </section>
 
@@ -645,14 +631,11 @@ Return ONLY complete HTML code:`;
     <section class="py-20 bg-gray-900 text-white">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-3xl font-bold mb-6">Ready to Get Started?</h2>
-            <p class="text-gray-300 mb-8 text-lg">Join the future with ${
-              pitchData.name
-            }</p>
-            <button class="bg-[${
-              colors.accent
-            }] text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-[${
-      colors.primary
-    }] transition-colors">
+            <p class="text-gray-300 mb-8 text-lg">Join the future with ${pitchData.name
+      }</p>
+            <button class="bg-[${colors.accent
+      }] text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-[${colors.primary
+      }] transition-colors">
                 Start Your Journey
             </button>
         </div>
@@ -683,7 +666,7 @@ Return ONLY complete HTML code:`;
 
   function showNotification(message, type) {
     const el = document.createElement("div");
-    
+
     // Enhanced notification styling with support for warning type
     let statusClass, icon;
     switch (type) {
@@ -701,7 +684,7 @@ Return ONLY complete HTML code:`;
         icon = "❌";
         break;
     }
-    
+
     el.className = `fixed top-4 right-4 px-6 py-4 rounded-xl shadow-2xl z-50 font-semibold backdrop-blur-sm border animate-fade-in-right ${statusClass}`;
     el.innerHTML = `
       <div class="flex items-center">
@@ -711,7 +694,7 @@ Return ONLY complete HTML code:`;
       </div>
     `;
     document.body.appendChild(el);
-    
+
     // Auto-remove after delay (longer for errors and warnings)
     const delay = type === "error" || type === "warning" ? 6000 : 4000;
     setTimeout(() => {
@@ -746,13 +729,13 @@ Return ONLY complete HTML code:`;
         >
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6">
             <div className="mb-4 sm:mb-0">
-              <h2 
+              <h2
                 style={{ background: 'var(--gradient-primary-bold)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
                 className="text-2xl sm:text-3xl lg:text-4xl font-primary font-bold mb-2 sm:mb-3"
               >
                 {data.name}
               </h2>
-              <p 
+              <p
                 style={{ color: 'var(--text-primary)' }}
                 className="text-lg sm:text-xl font-medium mb-3 sm:mb-4"
               >
@@ -760,7 +743,7 @@ Return ONLY complete HTML code:`;
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              <span 
+              <span
                 style={{
                   background: 'var(--gradient-success-subtle)',
                   color: 'var(--text-success)',
@@ -774,7 +757,7 @@ Return ONLY complete HTML code:`;
           </div>
 
           <div className="flex flex-wrap gap-2 sm:gap-3">
-            <span 
+            <span
               style={{
                 background: 'var(--gradient-primary-subtle)',
                 color: 'var(--text-primary)',
@@ -785,7 +768,7 @@ Return ONLY complete HTML code:`;
               <span className="mr-1 sm:mr-2">🏢</span>
               {data.industry}
             </span>
-            <span 
+            <span
               style={{
                 background: 'var(--gradient-secondary-subtle)',
                 color: 'var(--text-secondary)',
@@ -796,7 +779,7 @@ Return ONLY complete HTML code:`;
               <span className="mr-1 sm:mr-2">🎯</span>
               {data.target_audience?.segments?.length || 0} Target Segments
             </span>
-            <span 
+            <span
               style={{
                 background: 'var(--gradient-accent-subtle)',
                 color: 'var(--text-accent)',
@@ -827,20 +810,20 @@ Return ONLY complete HTML code:`;
             transition={{ delay: 0.1 }}
           >
             <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
-              <div 
+              <div
                 style={{ background: 'var(--gradient-primary-subtle)' }}
                 className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl group-hover:scale-110 transition-transform"
               >
                 🎯
               </div>
-              <h3 
+              <h3
                 style={{ color: 'var(--text-primary)' }}
                 className="font-primary font-bold text-base sm:text-lg"
               >
                 Elevator Pitch
               </h3>
             </div>
-            <p 
+            <p
               style={{ color: 'var(--text-primary)' }}
               className="text-sm sm:text-base leading-relaxed font-medium"
             >
@@ -863,20 +846,20 @@ Return ONLY complete HTML code:`;
             transition={{ delay: 0.2 }}
           >
             <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
-              <div 
+              <div
                 style={{ background: 'var(--gradient-secondary-subtle)' }}
                 className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl group-hover:scale-110 transition-transform"
               >
                 💎
               </div>
-              <h3 
+              <h3
                 style={{ color: 'var(--text-primary)' }}
                 className="font-primary font-bold text-base sm:text-lg"
               >
                 Unique Value Proposition
               </h3>
             </div>
-            <p 
+            <p
               style={{ color: 'var(--text-primary)' }}
               className="text-sm sm:text-base leading-relaxed font-medium"
             >
@@ -899,20 +882,20 @@ Return ONLY complete HTML code:`;
             transition={{ delay: 0.3 }}
           >
             <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
-              <div 
+              <div
                 style={{ background: 'var(--gradient-error-subtle)' }}
                 className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl group-hover:scale-110 transition-transform"
               >
                 🧩
               </div>
-              <h3 
+              <h3
                 style={{ color: 'var(--text-primary)' }}
                 className="font-primary font-bold text-base sm:text-lg"
               >
                 The Problem
               </h3>
             </div>
-            <p 
+            <p
               style={{ color: 'var(--text-primary)' }}
               className="text-sm sm:text-base leading-relaxed font-medium"
             >
@@ -935,20 +918,20 @@ Return ONLY complete HTML code:`;
             transition={{ delay: 0.4 }}
           >
             <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
-              <div 
+              <div
                 style={{ background: 'var(--gradient-success-subtle)' }}
                 className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl group-hover:scale-110 transition-transform"
               >
                 💡
               </div>
-              <h3 
+              <h3
                 style={{ color: 'var(--text-primary)' }}
                 className="font-primary font-bold text-base sm:text-lg"
               >
                 Our Solution
               </h3>
             </div>
-            <p 
+            <p
               style={{ color: 'var(--text-primary)' }}
               className="text-sm sm:text-base leading-relaxed font-medium"
             >
@@ -971,14 +954,14 @@ Return ONLY complete HTML code:`;
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <h3 
+          <h3
             style={{ color: 'var(--text-primary)' }}
             className="text-lg sm:text-xl font-primary font-bold mb-3 sm:mb-4 flex items-center"
           >
             <span className="mr-2 sm:mr-3 text-xl sm:text-2xl">🎯</span>
             Target Audience
           </h3>
-          <p 
+          <p
             style={{ color: 'var(--text-primary)' }}
             className="text-sm sm:text-base mb-3 sm:mb-4 font-medium"
           >
@@ -1017,7 +1000,7 @@ Return ONLY complete HTML code:`;
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            <h3 
+            <h3
               style={{ color: 'var(--text-primary)' }}
               className="text-lg sm:text-xl font-primary font-bold mb-4 sm:mb-6 flex items-center"
             >
@@ -1027,14 +1010,14 @@ Return ONLY complete HTML code:`;
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
               <div>
-                <h4 
+                <h4
                   style={{ color: 'var(--text-secondary)' }}
                   className="font-bold mb-2 flex items-center text-sm sm:text-base"
                 >
                   <span className="mr-1.5 sm:mr-2">🎯</span>
                   Headline
                 </h4>
-                <p 
+                <p
                   style={{
                     background: 'var(--bg-secondary)',
                     border: '1px solid var(--border-secondary)',
@@ -1047,14 +1030,14 @@ Return ONLY complete HTML code:`;
               </div>
 
               <div>
-                <h4 
+                <h4
                   style={{ color: 'var(--text-secondary)' }}
                   className="font-bold mb-2 flex items-center text-sm sm:text-base"
                 >
                   <span className="mr-1.5 sm:mr-2">📢</span>
                   Subheadline
                 </h4>
-                <p 
+                <p
                   style={{
                     background: 'var(--bg-secondary)',
                     border: '1px solid var(--border-secondary)',
@@ -1067,14 +1050,14 @@ Return ONLY complete HTML code:`;
               </div>
 
               <div>
-                <h4 
+                <h4
                   style={{ color: 'var(--text-secondary)' }}
                   className="font-bold mb-2 flex items-center text-sm sm:text-base"
                 >
                   <span className="mr-1.5 sm:mr-2">🚀</span>
                   Call to Action
                 </h4>
-                <p 
+                <p
                   style={{
                     background: 'var(--bg-secondary)',
                     border: '1px solid var(--border-secondary)',
@@ -1087,14 +1070,14 @@ Return ONLY complete HTML code:`;
               </div>
 
               <div>
-                <h4 
+                <h4
                   style={{ color: 'var(--text-secondary)' }}
                   className="font-bold mb-2 flex items-center text-sm sm:text-base"
                 >
                   <span className="mr-1.5 sm:mr-2">✨</span>
                   Key Features
                 </h4>
-                <div 
+                <div
                   style={{
                     background: 'var(--bg-secondary)',
                     border: '1px solid var(--border-secondary)',
@@ -1106,11 +1089,11 @@ Return ONLY complete HTML code:`;
                       key={idx}
                       className="flex items-start space-x-2 mb-2 last:mb-0"
                     >
-                      <span 
+                      <span
                         style={{ background: 'var(--color-secondary)' }}
                         className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mt-1.5 sm:mt-2 shrink-0"
                       ></span>
-                      <span 
+                      <span
                         style={{ color: 'var(--text-primary)' }}
                         className="font-medium text-xs sm:text-sm leading-relaxed"
                       >
@@ -1140,7 +1123,7 @@ Return ONLY complete HTML code:`;
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.7 }}
             >
-              <h3 
+              <h3
                 style={{ color: 'var(--text-primary)' }}
                 className="text-base sm:text-lg font-primary font-bold mb-3 sm:mb-4 flex items-center"
               >
@@ -1154,7 +1137,7 @@ Return ONLY complete HTML code:`;
                     className="flex items-center space-x-2 sm:space-x-3"
                   >
                     <div
-                      style={{ 
+                      style={{
                         backgroundColor: color,
                         border: '2px solid var(--border-primary)',
                         boxShadow: 'var(--shadow-sm)',
@@ -1162,13 +1145,13 @@ Return ONLY complete HTML code:`;
                       className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg shrink-0"
                     ></div>
                     <div className="min-w-0">
-                      <p 
+                      <p
                         style={{ color: 'var(--text-primary)' }}
                         className="font-medium text-xs sm:text-sm capitalize truncate"
                       >
                         {name}
                       </p>
-                      <p 
+                      <p
                         style={{ color: 'var(--text-secondary)' }}
                         className="text-xs font-mono truncate"
                       >
@@ -1195,7 +1178,7 @@ Return ONLY complete HTML code:`;
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.8 }}
             >
-              <h3 
+              <h3
                 style={{ color: 'var(--text-primary)' }}
                 className="text-base sm:text-lg font-primary font-bold mb-3 sm:mb-4 flex items-center"
               >
@@ -1215,7 +1198,7 @@ Return ONLY complete HTML code:`;
                     <span className="text-base sm:text-lg shrink-0 mt-0.5">
                       💡
                     </span>
-                    <p 
+                    <p
                       style={{ color: 'var(--text-primary)' }}
                       className="text-xs sm:text-sm font-medium leading-relaxed"
                     >
@@ -1242,7 +1225,7 @@ Return ONLY complete HTML code:`;
         animate={{ opacity: 1, y: 0 }}
       >
         {/* Code Header */}
-        <div 
+        <div
           style={{
             background: 'var(--bg-elevated)',
             borderBottom: '1px solid var(--border-primary)',
@@ -1255,7 +1238,7 @@ Return ONLY complete HTML code:`;
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-yellow-400 rounded-full"></div>
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-400 rounded-full"></div>
             </div>
-            <h3 
+            <h3
               style={{ color: 'var(--text-primary)' }}
               className="font-primary font-bold text-sm sm:text-base flex items-center"
             >
@@ -1301,7 +1284,7 @@ Return ONLY complete HTML code:`;
         </div>
 
         {/* Code Footer */}
-        <div 
+        <div
           style={{
             background: 'var(--bg-elevated)',
             borderTop: '1px solid var(--border-primary)',
@@ -1309,21 +1292,21 @@ Return ONLY complete HTML code:`;
           className="p-3 sm:p-4"
         >
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm mb-2">
-            <span 
+            <span
               style={{ color: 'var(--text-secondary)' }}
               className="flex items-center"
             >
               <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full mr-1.5 sm:mr-2 animate-pulse"></span>
               Ready to Deploy
             </span>
-            <span 
+            <span
               style={{ color: 'var(--text-secondary)' }}
               className="flex items-center"
             >
               <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full mr-1.5 sm:mr-2 animate-pulse"></span>
               Responsive Design
             </span>
-            <span 
+            <span
               style={{ color: 'var(--text-secondary)' }}
               className="flex items-center"
             >
@@ -1331,7 +1314,7 @@ Return ONLY complete HTML code:`;
               Modern Styling
             </span>
           </div>
-          <p 
+          <p
             style={{ color: 'var(--text-secondary)' }}
             className="text-center font-medium text-xs sm:text-sm leading-relaxed"
           >
@@ -1351,21 +1334,23 @@ Return ONLY complete HTML code:`;
 
   return (
     /* 
-     * DARK THEME STYLING IMPLEMENTATION
-     * - Overall background set to black (#000000)
-     * - Text colors changed from black/gray to white (#FFFFFF) 
-     * - Gradient text preserved (bg-clip-text, bg-linear-to-r classes)
-     * - Responsive design maintained across all screen sizes
+     * REDESIGNED GENERATE PITCH PAGE
+     * - Animated background orbs for visual depth
+     * - Enhanced hero section with gradient animations
+     * - Premium glassmorphism input container
+     * - Responsive design across all breakpoints
      */
-    <div 
-      className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"
+    <div className="pitch-page-container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative"
       style={{
-        /* Main container background - black theme */
         backgroundColor: 'transparent',
         minHeight: '100vh',
-        color: '#FFFFFF' /* Default text color for all children */
+        color: '#FFFFFF'
       }}
     >
+      {/* Animated Background Orbs */}
+      <div className="background-orb orb-1" />
+      <div className="background-orb orb-2" />
+      <div className="background-orb orb-3" />
       {/* Preview Modal */}
       <AnimatePresence>
         {showPreview && landingCode && (
@@ -1384,7 +1369,7 @@ Return ONLY complete HTML code:`;
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div 
+              <div
                 className="flex items-center justify-between p-6 mt-15 border-b border-neutral-600 rounded-t-2xl bg-gray-800"
               >
                 <div className="flex items-center space-x-4">
@@ -1405,7 +1390,7 @@ Return ONLY complete HTML code:`;
                       title="Open preview in new tab"
                     ></div>
                   </div>
-                  <h3 
+                  <h3
                     className="font-primary font-bold text-lg flex items-center text-white"
                   >
                     <span className="mr-3 text-xl">🌐</span>
@@ -1436,7 +1421,7 @@ Return ONLY complete HTML code:`;
               </div>
 
               {/* Preview Content */}
-              <div 
+              <div
                 className="flex-1 rounded-b-2xl overflow-hidden bg-gray-900"
               >
                 <iframe
@@ -1485,19 +1470,18 @@ Return ONLY complete HTML code:`;
               <div
                 className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all"
                 style={{
-                  background: result && !landingCode 
-                    ? 'var(--dark-gradient-primary)' 
-                    : landingCode 
-                    ? 'var(--dark-gradient-success)' 
-                    : 'var(--dark-gradient-secondary)',
+                  background: result && !landingCode
+                    ? 'var(--dark-gradient-primary)'
+                    : landingCode
+                      ? 'var(--dark-gradient-success)'
+                      : 'var(--dark-gradient-secondary)',
                   color: result || landingCode ? 'var(--dark-text-primary)' : 'var(--dark-text-disabled)',
-                  border: `1px solid ${
-                    result && !landingCode 
-                      ? 'var(--dark-border-primary)' 
-                      : landingCode 
-                      ? 'var(--dark-border-success)' 
+                  border: `1px solid ${result && !landingCode
+                    ? 'var(--dark-border-primary)'
+                    : landingCode
+                      ? 'var(--dark-border-success)'
                       : 'var(--dark-border-tertiary)'
-                  }`
+                    }`
                 }}
               >
                 <span className="text-base">
@@ -1521,92 +1505,105 @@ Return ONLY complete HTML code:`;
             </div>
           </div>
 
-          {/* Main Header */}
-          <div className="text-center">
+          {/* Main Header - Enhanced Hero Section */}
+          <div className="pitch-hero text-center">
             <motion.div
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-linear-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl sm:rounded-3xl shadow-2xl mb-6 sm:mb-8"
+              whileHover={{ scale: 1.05, rotate: 3 }}
+              className="pitch-hero-icon mx-auto"
             >
               <img
                 src={LogoIcon}
                 alt="Pitch Crafter"
-                className="w-12 h-12 sm:w-16 sm:h-16"
+                className="w-14 h-14"
               />
             </motion.div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black bg-clip-text text-transparent bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 mb-4 sm:mb-6 px-4 pb-1">
-              Craft the Pitch Using AI
+            <h1 className="pitch-hero-title mb-4 sm:mb-6 px-4">
+              Craft Your Perfect Pitch
             </h1>
-            {/* Regular text changed to white */}
-            <p 
-              className="text-base sm:text-lg lg:text-xl max-w-2xl mx-auto leading-relaxed px-4 text-white"
-            >
+            <p className="pitch-hero-subtitle px-4">
               Transform your startup idea into a complete business package with
-              AI-powered pitch generation and professional website code.
+              AI-powered pitch generation, branding, and production-ready website code.
             </p>
           </div>
         </motion.div>
 
-        {/* Form */}
+        {/* Enhanced Form Section */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 mb-8 sm:mb-12"
-          style={{
-            background: 'var(--dark-card-bg)',
-            border: '1px solid var(--dark-border-primary)',
-            boxShadow: 'var(--dark-shadow-xl)',
-            backdropFilter: 'blur(20px)'
-          }}
+          className="pitch-input-container mb-8 sm:mb-12"
         >
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            <div>
-              <label 
-                className="flex flex-col sm:flex-row sm:items-center text-sm font-semibold mb-3 sm:mb-4"
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label
+                className="flex items-center text-sm font-semibold mb-3"
                 style={{ color: 'var(--dark-text-primary)' }}
               >
-                <span 
-                  className="px-3 py-1 rounded-full text-xs mb-2 sm:mb-0 sm:mr-2 w-fit"
-                  style={{
-                    background: 'var(--dark-gradient-primary)',
-                    color: 'var(--dark-text-primary)'
-                  }}
-                >
-                  STEP 1
-                </span>
+                <span className="text-xl mr-2">💡</span>
                 <span>Describe Your Startup Vision</span>
               </label>
-              <motion.textarea
-                whileFocus={{ scale: 1.005 }}
+              <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="💡 Example: I want to build an AI-powered fitness app that creates personalized workout plans with real-time form correction using computer vision, targeting busy professionals who want effective home workouts..."
-                className="w-full min-h-[150px] sm:min-h-[200px] p-4 sm:p-6 rounded-xl sm:rounded-2xl outline-none resize-none text-sm sm:text-base transition-all duration-300"
-                style={{
-                  background: 'var(--dark-input-bg)',
-                  border: '2px solid var(--dark-border-secondary)',
-                  color: 'var(--dark-text-primary)',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: 'var(--dark-shadow-inner)'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'var(--dark-border-focus)';
-                  e.target.style.background = 'var(--dark-input-focus-bg)';
-                  e.target.style.boxShadow = 'var(--dark-shadow-focus)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'var(--dark-border-secondary)';
-                  e.target.style.background = 'var(--dark-input-bg)';
-                  e.target.style.boxShadow = 'var(--dark-shadow-inner)';
-                }}
+                placeholder="I want to build an AI-powered fitness app that creates personalized workout plans with real-time form correction using computer vision, targeting busy professionals..."
+                className="pitch-textarea"
+                maxLength={2000}
                 required
               />
+
+              {/* Character Counter */}
+              <div className="character-counter">
+                <span className={`character-count ${prompt.length > 1800 ? 'warning' : ''} ${prompt.length >= 2000 ? 'error' : ''}`}>
+                  {prompt.length} / 2000 characters
+                </span>
+                <span className="text-xs" style={{ color: 'var(--dark-text-tertiary)' }}>
+                  Be detailed for better results
+                </span>
+              </div>
             </div>
 
-            <SpecialButton
+            {/* Suggestion Chips */}
+            <div className="suggestion-chips mb-6">
+              <button
+                type="button"
+                className="suggestion-chip"
+                onClick={() => setPrompt("An AI-powered personal finance app that automatically categorizes expenses, predicts future spending, and provides personalized saving recommendations for millennials.")}
+              >
+                <span className="icon">💰</span>
+                <span>FinTech App</span>
+              </button>
+              <button
+                type="button"
+                className="suggestion-chip"
+                onClick={() => setPrompt("A sustainable e-commerce platform that connects eco-conscious consumers with local artisans, featuring carbon-neutral shipping and a zero-waste packaging system.")}
+              >
+                <span className="icon">🌱</span>
+                <span>Eco Commerce</span>
+              </button>
+              <button
+                type="button"
+                className="suggestion-chip"
+                onClick={() => setPrompt("An EdTech platform that uses AI to create personalized learning paths for students, with interactive AR/VR experiences and real-time progress tracking for parents.")}
+              >
+                <span className="icon">📚</span>
+                <span>EdTech Platform</span>
+              </button>
+              <button
+                type="button"
+                className="suggestion-chip"
+                onClick={() => setPrompt("A healthcare app that uses wearable data and AI to predict potential health issues, connecting users with telehealth doctors for preventive care consultations.")}
+              >
+                <span className="icon">🏥</span>
+                <span>HealthTech</span>
+              </button>
+            </div>
+
+            {/* Enhanced Generate Button */}
+            <button
               type="submit"
-              disabled={loading}
-              className="w-full py-4 sm:py-5 text-sm sm:text-base"
+              disabled={loading || !prompt.trim()}
+              className={`generate-btn ${!loading && prompt.trim() ? 'generate-btn-pulse' : ''}`}
             >
               <AnimatePresence mode="wait">
                 {loading ? (
@@ -1615,8 +1612,7 @@ Return ONLY complete HTML code:`;
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.2, ease: "easeInOut" }}
-                    className="flex items-center justify-center space-x-2 sm:space-x-3"
+                    className="flex items-center justify-center space-x-3"
                   >
                     <motion.div
                       animate={{ rotate: 360 }}
@@ -1625,12 +1621,9 @@ Return ONLY complete HTML code:`;
                         repeat: Infinity,
                         ease: "linear",
                       }}
-                      className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-white border-t-transparent rounded-full"
+                      className="w-6 h-6 border-2 border-white border-t-transparent rounded-full"
                     />
-                    <span className="hidden sm:inline">
-                      AI is crafting your startup...
-                    </span>
-                    <span className="sm:hidden">Generating...</span>
+                    <span>AI is crafting your startup...</span>
                   </motion.div>
                 ) : (
                   <motion.div
@@ -1638,13 +1631,15 @@ Return ONLY complete HTML code:`;
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.2, ease: "easeInOut" }}
-                    className="flex items-center justify-center space-x-2 sm:space-x-3"
+                    className="flex items-center justify-center space-x-3"
                   >
+                    <span className="text-xl">✨</span>
+                    <span>Generate Complete Startup Package</span>
+                    <span className="text-xl">🚀</span>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </SpecialButton>
+            </button>
           </form>
         </motion.div>
 

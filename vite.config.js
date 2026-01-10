@@ -2,20 +2,25 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
-    react(),
+    react({
+      // Enable React Fast Refresh for better DX
+      fastRefresh: true
+    }),
     tailwindcss()
   ],
+
   // Static file serving configuration
   publicDir: 'public',
   assetsInclude: ['**/*.svg', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.webp'],
+
+  // Development server configuration
   server: {
     host: 'localhost',
     port: process.env.PORT || 3000,
-    open: true, // Automatically open browser
-    strictPort: false, // Allow fallback to next available port
-    // Enhanced CORS configuration
+    open: true,
+    strictPort: false,
     cors: {
       origin: [
         'http://localhost:3000',
@@ -28,52 +33,124 @@ export default defineConfig({
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'x-goog-api-key']
     },
-    // Enhanced HMR and automatic reloading settings
     hmr: {
       timeout: 60000,
       overlay: true,
       port: process.env.HMR_PORT || 24678
     },
-    // Watch options for better file change detection
     watch: {
       usePolling: true,
       interval: 100
     },
-    // Middleware for better error handling and logging
-    middlewareMode: false,
     fs: {
       strict: true,
       allow: ['..']
     }
   },
+
+  // Production build configuration
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    // Enhanced build optimizations
+
+    // Minification settings
+    minify: 'esbuild',
+    target: 'es2020',
+
+    // CSS optimization
+    cssMinify: true,
+    cssCodeSplit: true,
+
+    // Enhanced code splitting
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['framer-motion', 'styled-components'],
-          supabase: ['@supabase/supabase-js']
-        }
+          // Core React dependencies
+          'vendor-react': ['react', 'react-dom'],
+          // Animation library
+          'vendor-motion': ['framer-motion'],
+          // Backend service
+          'vendor-supabase': ['@supabase/supabase-js'],
+          // Styling utilities
+          'vendor-styled': ['styled-components']
+        },
+        // Asset naming for better caching
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.')
+          const ext = info[info.length - 1]
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico|webp/i.test(ext)) {
+            return 'assets/images/[name]-[hash][extname]'
+          }
+          if (/css/i.test(ext)) {
+            return 'assets/css/[name]-[hash][extname]'
+          }
+          return 'assets/[name]-[hash][extname]'
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js'
       }
     },
-    // Optimize chunk size
-    chunkSizeWarningLimit: 1000,
-    // Enable source maps for better debugging
-    sourcemap: true
+
+    // Chunk size warning
+    chunkSizeWarningLimit: 500,
+
+    // Source maps only in development
+    sourcemap: mode === 'development',
+
+    // Report compressed size
+    reportCompressedSize: true,
+
+    // Asset inlining threshold (4kb)
+    assetsInlineLimit: 4096
   },
-  // Enhanced network and performance settings
+
+  // Preview server configuration
+  preview: {
+    port: 3000,
+    strictPort: false,
+    open: true
+  },
+
+  // Dependency optimization
   optimizeDeps: {
-    include: ['react', 'react-dom', 'framer-motion', '@supabase/supabase-js'],
-    exclude: []
+    include: [
+      'react',
+      'react-dom',
+      'framer-motion',
+      '@supabase/supabase-js',
+      'styled-components'
+    ],
+    exclude: [],
+    force: false
   },
-  // Define environment variables for better API handling
+
+  // Environment variables
   define: {
-    __DEV__: JSON.stringify(true), // Default to development mode
-    __API_TIMEOUT__: JSON.stringify(30000), // 30 seconds
+    __DEV__: JSON.stringify(mode === 'development'),
+    __PROD__: JSON.stringify(mode === 'production'),
+    __API_TIMEOUT__: JSON.stringify(30000),
     __MAX_RETRIES__: JSON.stringify(3)
   },
-  base: './'
-})
+
+  // Base path for deployment
+  base: './',
+
+  // Resolve aliases for cleaner imports
+  resolve: {
+    alias: {
+      '@': '/src',
+      '@components': '/src/components',
+      '@assets': '/src/assets',
+      '@lib': '/src/lib',
+      '@utils': '/src/utils'
+    }
+  },
+
+  // esbuild configuration for production
+  esbuild: {
+    // Drop console and debugger in production
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+    // Legal comments handling
+    legalComments: 'none'
+  }
+}))

@@ -3,7 +3,7 @@ import LogoIcon from "../assets/logo-icon.svg";
 import { NavButton, MobileNavItem, MobileMenuButton } from "./Button";
 
 export default function Navbar({
-    user,
+    _user,
     currentView,
     setCurrentView,
     mobileMenuOpen,

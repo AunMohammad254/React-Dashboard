@@ -1,0 +1,11 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://pitchcraft.ai/sitemap.xml
+
+# Block certain files
+Disallow: /api/
+Disallow: /.env
+Disallow: /*.json$
