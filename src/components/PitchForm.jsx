@@ -6,7 +6,6 @@ import { LinkButton, PrimaryButton } from "./Button";
 import GalaxyButton from "./GalaxyButton";
 import LogoIcon from "../assets/logo.svg";
 import { APIRequestHelper, checkNetworkStatus, logNetworkDiagnostics } from "../utils/networkUtils";
-import AuroraBackground from "./AuroraBackground";
 
 // API Rate Limiting and Request Queue Management
 const MODELS = {
@@ -1105,16 +1104,8 @@ Return ONLY complete HTML code:`;
   };
 
   return (
-    <div className="relative min-h-screen bg-black text-[var(--text-primary)] font-sans selection:bg-[var(--accent-primary)] selection:text-white overflow-x-hidden">
-      <div className="fixed inset-0 z-0">
-        <AuroraBackground
-          speed={0.5}
-          blend={0.5}
-          amplitude={1.0}
-          colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
-        />
-      </div>
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-12">
+    <div className="relative text-[var(--text-primary)] font-sans selection:bg-[var(--accent-primary)] selection:text-white overflow-x-hidden">
+      <div className="relative z-10 w-full">
         {/* Header */}
         <header className="flex justify-between items-center mb-8 sm:mb-12 animate-fade-in-down">
           <div className="flex items-center space-x-3 sm:space-x-4 group cursor-pointer" onClick={() => onNavigate('home')}>

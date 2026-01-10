@@ -94,17 +94,37 @@ void main() {
   vec3 rampColor;
   COLOR_RAMP(colors, uv.x, rampColor);
   
-  float height = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
-  height = exp(height);
-  height = (uv.y * 2.0 - height + 0.2);
-  float intensity = 0.6 * height;
+  // Create multiple aurora layers for full-screen coverage
+  float noise1 = snoise(vec2(uv.x * 1.5 + uTime * 0.05, uv.y * 0.5 + uTime * 0.1)) * uAmplitude;
+  float noise2 = snoise(vec2(uv.x * 2.5 + uTime * 0.08, uv.y * 1.2 - uTime * 0.15)) * uAmplitude;
+  float noise3 = snoise(vec2(uv.x * 0.8 - uTime * 0.03, uv.y * 0.8 + uTime * 0.12)) * uAmplitude;
   
-  float midPoint = 0.20;
-  float auroraAlpha = smoothstep(midPoint - uBlend * 0.5, midPoint + uBlend * 0.5, intensity);
+  // Combine noises for flowing effect
+  float combinedNoise = (noise1 + noise2 * 0.7 + noise3 * 0.5) / 2.2;
   
-  vec3 auroraColor = intensity * rampColor;
+  // Create flowing aurora bands across the entire screen
+  float band1 = sin(uv.y * 3.14159 + combinedNoise * 2.0 + uTime * 0.2) * 0.5 + 0.5;
+  float band2 = sin(uv.x * 2.5 + uv.y * 1.5 + combinedNoise * 1.5 + uTime * 0.15) * 0.5 + 0.5;
+  float band3 = sin((uv.x + uv.y) * 2.0 + combinedNoise * 1.8 - uTime * 0.1) * 0.5 + 0.5;
   
-  fragColor = vec4(auroraColor * auroraAlpha, auroraAlpha);
+  // Blend the bands together
+  float intensity = (band1 * 0.4 + band2 * 0.35 + band3 * 0.25) * (0.3 + combinedNoise * 0.4);
+  
+  // Add edge glow for corners
+  float edgeGlow = (1.0 - uv.x) * 0.3 + uv.x * 0.3 + (1.0 - uv.y) * 0.2 + uv.y * 0.2;
+  intensity = intensity * (0.6 + edgeGlow * 0.4);
+  
+  // Smooth the aurora effect with blend
+  float auroraAlpha = smoothstep(0.1 - uBlend * 0.2, 0.4 + uBlend * 0.3, intensity);
+  auroraAlpha = auroraAlpha * (0.5 + intensity * 0.5);
+  
+  // Mix colors based on position and noise for varied color distribution
+  vec3 finalColor = rampColor * intensity;
+  
+  // Add subtle color variation across the screen
+  finalColor = mix(finalColor, rampColor * band2, 0.3);
+  
+  fragColor = vec4(finalColor * auroraAlpha, auroraAlpha * 0.85);
 }
 `;
 
@@ -168,6 +188,11 @@ export default function Aurora({ colorStops = ['#3A29FF', '#FF94B4', '#FF3232'],
         const mesh = new Mesh(gl, { geometry, program });
         ctn.appendChild(gl.canvas);
 
+        // Ensure canvas fills the container
+        gl.canvas.style.width = '100%';
+        gl.canvas.style.height = '100%';
+        gl.canvas.style.display = 'block';
+
         let animateId = 0;
         const update = t => {
             animateId = requestAnimationFrame(update);
@@ -200,5 +225,20 @@ export default function Aurora({ colorStops = ['#3A29FF', '#FF94B4', '#FF3232'],
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [amplitude]); // Re-init if amplitude changes significantly, or just rely on ref updates
 
-    return <div ref={ctnDom} className="w-full h-full absolute inset-0 pointer-events-none" />;
+    return (
+        <div
+            ref={ctnDom}
+            className={`aurora-background ${props.className || ''}`}
+            style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+                zIndex: 0,
+                ...props.style
+            }}
+        />
+    );
 }

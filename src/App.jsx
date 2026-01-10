@@ -6,6 +6,7 @@ import MyPitches from "./components/MyPitches";
 import Navbar from "./components/Navbar";
 import LogoIcon from "./assets/logo-icon.svg";
 import "./App.css";
+import AuroraBackground from "./components/AuroraBackground";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -82,7 +83,7 @@ export default function App() {
 
   return (
     <div
-      className="min-h-screen dark-mode-root"
+      className="min-h-screen dark-mode-root flex flex-col"
       style={{
         background: "var(--dark-gradient-primary)",
         minHeight: "100vh",
@@ -100,11 +101,21 @@ export default function App() {
 
       {/* Main Content */}
       <main
-        className="flex-1 relative"
+        className="flex-1 relative overflow-hidden"
         style={{
           background: "transparent",
         }}
       >
+        <AuroraBackground
+          speed={0.5}
+          blend={0.5}
+          amplitude={1.0}
+          colorStops={["#4ade80", "#a855f7", "#3b82f6"]}
+          style={{
+            opacity: 0.6,
+            backgroundColor: "#0f172a"
+          }}
+        />
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 pt-28 sm:pt-32">
           {/* Breadcrumb Navigation */}
           <div className="mb-6 sm:mb-8 animate-fade-in-up w-full">
