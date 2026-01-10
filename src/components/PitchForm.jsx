@@ -6,6 +6,7 @@ import { LinkButton, PrimaryButton } from "./Button";
 import GalaxyButton from "./GalaxyButton";
 import LogoIcon from "../assets/logo.svg";
 import { APIRequestHelper, checkNetworkStatus, logNetworkDiagnostics } from "../utils/networkUtils";
+import AuroraBackground from "./AuroraBackground";
 
 // API Rate Limiting and Request Queue Management
 const MODELS = {
@@ -1104,16 +1105,16 @@ Return ONLY complete HTML code:`;
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans selection:bg-[var(--accent-primary)] selection:text-white overflow-x-hidden">
-      {/* Background Elements */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--accent-primary)] rounded-full blur-[120px] opacity-20 animate-blob"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--accent-secondary)] rounded-full blur-[120px] opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-[var(--accent-tertiary)] rounded-full blur-[120px] opacity-20 animate-blob animation-delay-4000"></div>
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
+    <div className="relative min-h-screen bg-black text-[var(--text-primary)] font-sans selection:bg-[var(--accent-primary)] selection:text-white overflow-x-hidden">
+      <div className="fixed inset-0 z-0">
+        <AuroraBackground
+          speed={0.5}
+          blend={0.5}
+          amplitude={1.0}
+          colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
+        />
       </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-12">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-12">
         {/* Header */}
         <header className="flex justify-between items-center mb-8 sm:mb-12 animate-fade-in-down">
           <div className="flex items-center space-x-3 sm:space-x-4 group cursor-pointer" onClick={() => onNavigate('home')}>
