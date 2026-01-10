@@ -1,8 +1,9 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { LinkButton, PrimaryButton } from "./Button";
-import SpecialButton from "./GenerateButton";
+import GalaxyButton from "./GalaxyButton";
 import LogoIcon from "../assets/logo.svg";
 import { APIRequestHelper, checkNetworkStatus, logNetworkDiagnostics } from "../utils/networkUtils";
 
@@ -142,7 +143,7 @@ class GeminiAPIManager {
     };
 
     try {
-      console.log(`���0 Making Gemini API request (attempt ${retryCount + 1}/${this.maxRetries + 1})`);
+      console.log(`0 Making Gemini API request (attempt ${retryCount + 1}/${this.maxRetries + 1})`);
       console.log('📤 Request payload:', JSON.stringify(requestBody, null, 2));
 
       this.lastRequestTime = Date.now();
@@ -756,187 +757,179 @@ Return ONLY complete HTML code:`;
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:gap-3">
-            <span
-              style={{
-                background: 'var(--gradient-primary-subtle)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-primary)',
-              }}
-              className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-medium text-xs sm:text-sm"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div
+              style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-secondary)' }}
+              className="p-3 sm:p-4 rounded-lg"
             >
-              <span className="mr-1 sm:mr-2">🏢</span>
-              {data.industry}
-            </span>
-            <span
-              style={{
-                background: 'var(--gradient-secondary-subtle)',
-                color: 'var(--text-secondary)',
-                border: '1px solid var(--border-secondary)',
-              }}
-              className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-medium text-xs sm:text-sm"
+              <h3 style={{ color: 'var(--text-secondary)' }} className="text-sm font-semibold mb-1">Industry</h3>
+              <p style={{ color: 'var(--text-primary)' }} className="font-medium">{data.industry}</p>
+            </div>
+            <div
+              style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-secondary)' }}
+              className="p-3 sm:p-4 rounded-lg"
             >
-              <span className="mr-1 sm:mr-2">🎯</span>
-              {data.target_audience?.segments?.length || 0} Target Segments
-            </span>
-            <span
-              style={{
-                background: 'var(--gradient-accent-subtle)',
-                color: 'var(--text-accent)',
-                border: '1px solid var(--border-accent)',
-              }}
-              className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-medium text-xs sm:text-sm"
+              <h3 style={{ color: 'var(--text-secondary)' }} className="text-sm font-semibold mb-1">Target Market</h3>
+              <p style={{ color: 'var(--text-primary)' }} className="font-medium">{data.target_audience.description}</p>
+            </div>
+            <div
+              style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-secondary)' }}
+              className="p-3 sm:p-4 rounded-lg"
             >
-              <span className="mr-1 sm:mr-2">💡</span>
-              AI Generated
-            </span>
+              <h3 style={{ color: 'var(--text-secondary)' }} className="text-sm font-semibold mb-1">Business Model</h3>
+              <p style={{ color: 'var(--text-primary)' }} className="font-medium">B2B SaaS</p>
+            </div>
+          </div>
+
+          {/* Elevator Pitch */}
+          <div
+            style={{
+              background: 'var(--bg-secondary)',
+              borderLeft: '4px solid var(--accent-primary)',
+            }}
+            className="p-4 sm:p-6 rounded-r-lg"
+          >
+            <h3 style={{ color: 'var(--text-primary)' }} className="text-lg font-bold mb-2">Elevator Pitch</h3>
+            <p style={{ color: 'var(--text-secondary)' }} className="italic leading-relaxed">
+              "{data.elevator_pitch}"
+            </p>
           </div>
         </motion.div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-          {/* Elevator Pitch */}
+        {/* Problem & Solution Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
           <motion.div
-            whileHover={{ y: -4 }}
             style={{
               background: 'var(--bg-elevated)',
               border: '1px solid var(--border-primary)',
-              boxShadow: 'var(--shadow-card)',
-              backdropFilter: 'var(--glass-backdrop)',
+              boxShadow: 'var(--shadow-sm)',
             }}
-            className="p-4 sm:p-5 lg:p-6 hover:shadow-xl transition-all duration-300 group rounded-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            className="p-4 sm:p-6 rounded-xl relative overflow-hidden group hover:shadow-lg transition-all"
+            whileHover={{ y: -5 }}
           >
-            <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
-              <div
-                style={{ background: 'var(--gradient-primary-subtle)' }}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl group-hover:scale-110 transition-transform"
-              >
-                🎯
-              </div>
-              <h3
-                style={{ color: 'var(--text-primary)' }}
-                className="font-primary font-bold text-base sm:text-lg"
-              >
-                Elevator Pitch
-              </h3>
+            <div
+              style={{ background: 'var(--accent-error)' }}
+              className="absolute top-0 left-0 w-1 h-full opacity-50 group-hover:opacity-100 transition-opacity"
+            />
+            <div className="flex items-center space-x-3 mb-4">
+              <span className="text-2xl sm:text-3xl">⚠️</span>
+              <h3 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold">The Problem</h3>
             </div>
-            <p
-              style={{ color: 'var(--text-primary)' }}
-              className="text-sm sm:text-base leading-relaxed font-medium"
-            >
-              {data.elevator_pitch}
-            </p>
-          </motion.div>
-
-          {/* Unique Value Proposition */}
-          <motion.div
-            whileHover={{ y: -4 }}
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-secondary)',
-              boxShadow: 'var(--shadow-card)',
-              backdropFilter: 'var(--glass-backdrop)',
-            }}
-            className="p-4 sm:p-5 lg:p-6 hover:shadow-xl transition-all duration-300 group rounded-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
-              <div
-                style={{ background: 'var(--gradient-secondary-subtle)' }}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl group-hover:scale-110 transition-transform"
-              >
-                💎
-              </div>
-              <h3
-                style={{ color: 'var(--text-primary)' }}
-                className="font-primary font-bold text-base sm:text-lg"
-              >
-                Unique Value Proposition
-              </h3>
-            </div>
-            <p
-              style={{ color: 'var(--text-primary)' }}
-              className="text-sm sm:text-base leading-relaxed font-medium"
-            >
-              {data.unique_value_proposition}
-            </p>
-          </motion.div>
-
-          {/* Problem */}
-          <motion.div
-            whileHover={{ y: -4 }}
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-error)',
-              boxShadow: 'var(--shadow-card)',
-              backdropFilter: 'var(--glass-backdrop)',
-            }}
-            className="p-4 sm:p-5 lg:p-6 hover:shadow-xl transition-all duration-300 group rounded-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
-              <div
-                style={{ background: 'var(--gradient-error-subtle)' }}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl group-hover:scale-110 transition-transform"
-              >
-                🧩
-              </div>
-              <h3
-                style={{ color: 'var(--text-primary)' }}
-                className="font-primary font-bold text-base sm:text-lg"
-              >
-                The Problem
-              </h3>
-            </div>
-            <p
-              style={{ color: 'var(--text-primary)' }}
-              className="text-sm sm:text-base leading-relaxed font-medium"
-            >
+            <p style={{ color: 'var(--text-secondary)' }} className="leading-relaxed">
               {data.problem}
             </p>
           </motion.div>
 
-          {/* Solution */}
           <motion.div
-            whileHover={{ y: -4 }}
             style={{
               background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-success)',
-              boxShadow: 'var(--shadow-card)',
-              backdropFilter: 'var(--glass-backdrop)',
+              border: '1px solid var(--border-primary)',
+              boxShadow: 'var(--shadow-sm)',
             }}
-            className="p-4 sm:p-5 lg:p-6 hover:shadow-xl transition-all duration-300 group rounded-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            className="p-4 sm:p-6 rounded-xl relative overflow-hidden group hover:shadow-lg transition-all"
+            whileHover={{ y: -5 }}
           >
-            <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
-              <div
-                style={{ background: 'var(--gradient-success-subtle)' }}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl group-hover:scale-110 transition-transform"
-              >
-                💡
-              </div>
-              <h3
-                style={{ color: 'var(--text-primary)' }}
-                className="font-primary font-bold text-base sm:text-lg"
-              >
-                Our Solution
-              </h3>
+            <div
+              style={{ background: 'var(--accent-success)' }}
+              className="absolute top-0 right-0 w-1 h-full opacity-50 group-hover:opacity-100 transition-opacity"
+            />
+            <div className="flex items-center space-x-3 mb-4">
+              <span className="text-2xl sm:text-3xl">💡</span>
+              <h3 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold">The Solution</h3>
             </div>
-            <p
-              style={{ color: 'var(--text-primary)' }}
-              className="text-sm sm:text-base leading-relaxed font-medium"
-            >
+            <p style={{ color: 'var(--text-secondary)' }} className="leading-relaxed">
               {data.solution}
             </p>
+          </motion.div>
+        </div>
+
+        {/* Unique Value Proposition */}
+        <motion.div
+          style={{
+            background: 'linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-secondary) 100%)',
+            border: '1px solid var(--border-primary)',
+          }}
+          className="p-4 sm:p-8 rounded-xl text-center relative overflow-hidden"
+          whileHover={{ scale: 1.01 }}
+        >
+          <div
+            style={{
+              background: 'radial-gradient(circle at center, var(--accent-primary-transparent) 0%, transparent 70%)',
+            }}
+            className="absolute inset-0 opacity-20"
+          />
+          <div className="relative z-10">
+            <h3 style={{ color: 'var(--accent-primary)' }} className="text-sm font-bold uppercase tracking-widest mb-3">Unique Value Proposition</h3>
+            <p style={{ color: 'var(--text-primary)' }} className="text-xl sm:text-2xl font-bold leading-tight">
+              {data.unique_value_proposition}
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Brand Identity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+          {/* Logo Concepts */}
+          <motion.div
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-primary)',
+            }}
+            className="p-4 sm:p-6 rounded-xl"
+          >
+            <h3 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold mb-4 flex items-center">
+              <span className="mr-2">🎨</span> Logo Concepts
+            </h3>
+            <div className="space-y-3">
+              {data.logo_ideas.map((idea, index) => (
+                <div
+                  key={index}
+                  style={{
+                    background: 'var(--bg-tertiary)',
+                    border: '1px solid var(--border-secondary)',
+                  }}
+                  className="p-3 rounded-lg flex items-center space-x-3 hover:bg-opacity-80 transition-colors"
+                >
+                  <span
+                    style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)', borderColor: 'var(--border-primary)' }}
+                    className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold border"
+                  >
+                    {index + 1}
+                  </span>
+                  <p style={{ color: 'var(--text-primary)' }}>{idea}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Color Palette */}
+          <motion.div
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-primary)',
+            }}
+            className="p-4 sm:p-6 rounded-xl"
+          >
+            <h3 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold mb-4 flex items-center">
+              <span className="mr-2">🎭</span> Brand Colors
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              {Object.entries(data.colors).map(([name, hex]) => (
+                <div key={name} className="space-y-2 group cursor-pointer">
+                  <div
+                    className="h-16 w-full rounded-lg shadow-md border border-[var(--border-secondary)] transition-transform transform group-hover:scale-105 relative overflow-hidden"
+                    style={{ backgroundColor: hex }}
+                  >
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span style={{ color: 'var(--text-secondary)' }} className="text-sm capitalize font-medium">{name}</span>
+                    <span style={{ color: 'var(--text-tertiary)' }} className="text-xs font-mono bg-opacity-10 px-2 py-1 rounded">
+                      {hex}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </motion.div>
         </div>
 
@@ -944,783 +937,461 @@ Return ONLY complete HTML code:`;
         <motion.div
           style={{
             background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-accent)',
-            boxShadow: 'var(--shadow-card)',
-            backdropFilter: 'var(--glass-backdrop)',
+            border: '1px solid var(--border-primary)',
           }}
-          className="p-4 sm:p-5 lg:p-6 rounded-xl"
-          whileHover={{ scale: 1.01 }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          className="p-4 sm:p-6 lg:p-8 rounded-xl"
         >
-          <h3
-            style={{ color: 'var(--text-primary)' }}
-            className="text-lg sm:text-xl font-primary font-bold mb-3 sm:mb-4 flex items-center"
-          >
-            <span className="mr-2 sm:mr-3 text-xl sm:text-2xl">🎯</span>
-            Target Audience
-          </h3>
-          <p
-            style={{ color: 'var(--text-primary)' }}
-            className="text-sm sm:text-base mb-3 sm:mb-4 font-medium"
-          >
-            {data.target_audience?.description}
-          </p>
-          {data.target_audience?.segments && (
-            <div className="flex flex-wrap gap-1.5 sm:gap-2">
-              {data.target_audience.segments.map((segment, idx) => (
-                <span
-                  key={idx}
-                  style={{
-                    background: 'var(--bg-secondary)',
-                    color: 'var(--text-accent)',
-                    border: '1px solid var(--border-accent)',
-                  }}
-                  className="px-3 sm:px-4 py-1.5 sm:py-2 backdrop-blur-sm rounded-full text-xs sm:text-sm font-medium"
-                >
-                  {segment}
-                </span>
-              ))}
+          <div className="flex items-center space-x-3 mb-6">
+            <span className="text-2xl sm:text-3xl">👥</span>
+            <div>
+              <h3 style={{ color: 'var(--text-primary)' }} className="text-xl font-bold">Target Audience</h3>
+              <p style={{ color: 'var(--text-secondary)' }} className="text-sm">Who are we building for?</p>
             </div>
-          )}
-        </motion.div>
+          </div>
 
-        {/* Landing Page Copy */}
-        {data.landing_copy && (
-          <motion.div
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-secondary)',
-              boxShadow: 'var(--shadow-card)',
-              backdropFilter: 'var(--glass-backdrop)',
-            }}
-            className="p-4 sm:p-5 lg:p-6 rounded-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <h3
-              style={{ color: 'var(--text-primary)' }}
-              className="text-lg sm:text-xl font-primary font-bold mb-4 sm:mb-6 flex items-center"
-            >
-              <span className="mr-2 sm:mr-3 text-xl sm:text-2xl">📝</span>
-              Landing Page Copy
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-              <div>
-                <h4
-                  style={{ color: 'var(--text-secondary)' }}
-                  className="font-bold mb-2 flex items-center text-sm sm:text-base"
-                >
-                  <span className="mr-1.5 sm:mr-2">🎯</span>
-                  Headline
-                </h4>
-                <p
-                  style={{
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-secondary)',
-                    color: 'var(--text-primary)',
-                  }}
-                  className="text-sm sm:text-base font-medium p-3 sm:p-4 rounded-lg sm:rounded-xl leading-relaxed"
-                >
-                  {data.landing_copy.headline}
-                </p>
-              </div>
-
-              <div>
-                <h4
-                  style={{ color: 'var(--text-secondary)' }}
-                  className="font-bold mb-2 flex items-center text-sm sm:text-base"
-                >
-                  <span className="mr-1.5 sm:mr-2">📢</span>
-                  Subheadline
-                </h4>
-                <p
-                  style={{
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-secondary)',
-                    color: 'var(--text-primary)',
-                  }}
-                  className="text-sm sm:text-base font-medium p-3 sm:p-4 rounded-lg sm:rounded-xl leading-relaxed"
-                >
-                  {data.landing_copy.subheadline}
-                </p>
-              </div>
-
-              <div>
-                <h4
-                  style={{ color: 'var(--text-secondary)' }}
-                  className="font-bold mb-2 flex items-center text-sm sm:text-base"
-                >
-                  <span className="mr-1.5 sm:mr-2">🚀</span>
-                  Call to Action
-                </h4>
-                <p
-                  style={{
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-secondary)',
-                    color: 'var(--text-primary)',
-                  }}
-                  className="text-sm sm:text-base font-medium p-3 sm:p-4 rounded-lg sm:rounded-xl leading-relaxed"
-                >
-                  {data.landing_copy.call_to_action}
-                </p>
-              </div>
-
-              <div>
-                <h4
-                  style={{ color: 'var(--text-secondary)' }}
-                  className="font-bold mb-2 flex items-center text-sm sm:text-base"
-                >
-                  <span className="mr-1.5 sm:mr-2">✨</span>
-                  Key Features
-                </h4>
-                <div
-                  style={{
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-secondary)',
-                  }}
-                  className="p-3 sm:p-4 rounded-lg sm:rounded-xl"
-                >
-                  {data.landing_copy.key_features?.map((feature, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-start space-x-2 mb-2 last:mb-0"
-                    >
-                      <span
-                        style={{ background: 'var(--color-secondary)' }}
-                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mt-1.5 sm:mt-2 shrink-0"
-                      ></span>
-                      <span
-                        style={{ color: 'var(--text-primary)' }}
-                        className="font-medium text-xs sm:text-sm leading-relaxed"
-                      >
-                        {feature}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+            <div>
+              <h4 style={{ color: 'var(--text-primary)' }} className="font-semibold mb-3">Primary Segment</h4>
+              <p style={{ color: 'var(--text-secondary)' }} className="leading-relaxed mb-4">
+                {data.target_audience.description}
+              </p>
             </div>
-          </motion.div>
-        )}
-
-        {/* Brand Colors & Logo Ideas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-          {/* Brand Colors */}
-          {data.colors && (
-            <motion.div
-              style={{
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border-primary)',
-                boxShadow: 'var(--shadow-card)',
-                backdropFilter: 'var(--glass-backdrop)',
-              }}
-              className="p-4 sm:p-5 lg:p-6 rounded-xl"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.7 }}
-            >
-              <h3
-                style={{ color: 'var(--text-primary)' }}
-                className="text-base sm:text-lg font-primary font-bold mb-3 sm:mb-4 flex items-center"
-              >
-                <span className="mr-2">🎨</span>
-                Brand Colors
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                {Object.entries(data.colors).map(([name, color]) => (
-                  <div
-                    key={name}
-                    className="flex items-center space-x-2 sm:space-x-3"
-                  >
-                    <div
-                      style={{
-                        backgroundColor: color,
-                        border: '2px solid var(--border-primary)',
-                        boxShadow: 'var(--shadow-sm)',
-                      }}
-                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg shrink-0"
-                    ></div>
-                    <div className="min-w-0">
-                      <p
-                        style={{ color: 'var(--text-primary)' }}
-                        className="font-medium text-xs sm:text-sm capitalize truncate"
-                      >
-                        {name}
-                      </p>
-                      <p
-                        style={{ color: 'var(--text-secondary)' }}
-                        className="text-xs font-mono truncate"
-                      >
-                        {color}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Logo Ideas */}
-          {data.logo_ideas && (
-            <motion.div
-              style={{
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border-primary)',
-                boxShadow: 'var(--shadow-card)',
-                backdropFilter: 'var(--glass-backdrop)',
-              }}
-              className="p-4 sm:p-5 lg:p-6 rounded-xl"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.8 }}
-            >
-              <h3
-                style={{ color: 'var(--text-primary)' }}
-                className="text-base sm:text-lg font-primary font-bold mb-3 sm:mb-4 flex items-center"
-              >
-                <span className="mr-2">🎭</span>
-                Logo Ideas
-              </h3>
-              <div className="space-y-2 sm:space-y-3">
-                {data.logo_ideas.map((idea, idx) => (
-                  <div
-                    key={idx}
+            <div>
+              <h4 style={{ color: 'var(--text-primary)' }} className="font-semibold mb-3">Key Segments</h4>
+              <div className="flex flex-wrap gap-2">
+                {data.target_audience.segments.map((segment, index) => (
+                  <span
+                    key={index}
                     style={{
-                      background: 'var(--bg-secondary)',
+                      background: 'var(--bg-tertiary)',
+                      color: 'var(--accent-primary)',
                       border: '1px solid var(--border-secondary)',
                     }}
-                    className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg"
+                    className="px-3 py-1.5 rounded-full text-sm font-medium"
                   >
-                    <span className="text-base sm:text-lg shrink-0 mt-0.5">
-                      💡
-                    </span>
-                    <p
-                      style={{ color: 'var(--text-primary)' }}
-                      className="text-xs sm:text-sm font-medium leading-relaxed"
-                    >
-                      {idea}
-                    </p>
-                  </div>
+                    {segment}
+                  </span>
                 ))}
               </div>
-            </motion.div>
-          )}
-        </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     );
   };
 
-  // ✅ RENDER WEBSITE CODE COMPONENT
+  // ✅ CODE DISPLAY COMPONENT
   const RenderWebsiteCode = ({ code }) => {
     if (!code) return null;
 
     return (
-      <motion.div
-        className="card-glass overflow-hidden animate-fade-in-up"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        {/* Code Header */}
-        <div
+      <div className="animate-fade-in-up">
+        {/* Website Preview Card */}
+        <motion.div
           style={{
             background: 'var(--bg-elevated)',
-            borderBottom: '1px solid var(--border-primary)',
+            border: '1px solid var(--border-primary)',
+            boxShadow: 'var(--shadow-lg)',
           }}
-          className="rounded-t-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-5 lg:p-6 space-y-3 sm:space-y-0"
+          className="rounded-xl overflow-hidden"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
         >
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <div className="flex items-center space-x-1.5 sm:space-x-2">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-red-400 rounded-full"></div>
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-yellow-400 rounded-full"></div>
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-400 rounded-full"></div>
+          <div className="border-b border-[var(--border-secondary)] p-4 flex items-center justify-between bg-[var(--bg-secondary)]">
+            <div className="flex items-center space-x-3">
+              <span className="text-2xl">🌐</span>
+              <h3 style={{ color: 'var(--text-primary)' }} className="font-bold text-lg">Landing Page Generator</h3>
             </div>
-            <h3
-              style={{ color: 'var(--text-primary)' }}
-              className="font-primary font-bold text-sm sm:text-base flex items-center"
-            >
-              <span className="mr-2 sm:mr-3 text-lg sm:text-xl">🌐</span>
-              <span className="hidden sm:inline">
-                Generated Landing Page Code
-              </span>
-              <span className="sm:hidden">Website Code</span>
-            </h3>
+            <div className="flex space-x-2">
+              <button
+                onClick={openPreview}
+                style={{
+                  background: 'var(--accent-primary)',
+                  color: '#ffffff',
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity flex items-center shadow-lg"
+              >
+                <span className="mr-2">👁️</span> Live Preview
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(code);
+                  showNotification("Code copied to clipboard!", "success");
+                }}
+                style={{
+                  background: 'var(--bg-tertiary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-secondary)',
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold hover:bg-opacity-80 transition-colors flex items-center"
+              >
+                <span className="mr-2">📋</span> Copy Code
+              </button>
+            </div>
           </div>
-          <div className="flex mt-4 sm:mt-0 flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={openPreview}
-              className="btn-secondary flex items-center justify-center space-x-2 text-sm sm:text-base"
-            >
-              <span className="text-base sm:text-lg">👁️</span>
-              <span className="hidden sm:inline">Preview Website</span>
-              <span className="sm:hidden">Preview</span>
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                navigator.clipboard.writeText(code);
-                showNotification("Code copied to clipboard!", "success");
-              }}
-              className="btn-primary flex items-center justify-center space-x-2 text-sm sm:text-base"
-            >
-              <span className="text-base sm:text-lg">📋</span>
-              <span className="hidden sm:inline">Copy Code</span>
-              <span className="sm:hidden">Copy</span>
-            </motion.button>
-          </div>
-        </div>
 
-        {/* Code Display */}
-        <div className="p-3 sm:p-4 lg:p-6 bg-neutral-900 max-h-64 sm:max-h-80 lg:max-h-96 overflow-auto">
-          <pre className="text-green-400 text-xs sm:text-sm whitespace-pre-wrap font-mono leading-relaxed">
-            {code}
-          </pre>
-        </div>
-
-        {/* Code Footer */}
-        <div
-          style={{
-            background: 'var(--bg-elevated)',
-            borderTop: '1px solid var(--border-primary)',
-          }}
-          className="p-3 sm:p-4"
-        >
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm mb-2">
-            <span
-              style={{ color: 'var(--text-secondary)' }}
-              className="flex items-center"
-            >
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full mr-1.5 sm:mr-2 animate-pulse"></span>
-              Ready to Deploy
-            </span>
-            <span
-              style={{ color: 'var(--text-secondary)' }}
-              className="flex items-center"
-            >
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full mr-1.5 sm:mr-2 animate-pulse"></span>
-              Responsive Design
-            </span>
-            <span
-              style={{ color: 'var(--text-secondary)' }}
-              className="flex items-center"
-            >
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-purple-500 rounded-full mr-1.5 sm:mr-2 animate-pulse"></span>
-              Modern Styling
-            </span>
+          <div className="p-0 relative">
+            <pre className="text-sm p-4 overflow-x-auto font-mono text-gray-300 bg-[#1a1b26] leading-relaxed max-h-[500px] overflow-y-auto custom-scrollbar">
+              {code}
+            </pre>
           </div>
-          <p
-            style={{ color: 'var(--text-secondary)' }}
-            className="text-center font-medium text-xs sm:text-sm leading-relaxed"
-          >
-            💡 <strong>Pro Tip:</strong>{" "}
-            <span className="hidden sm:inline">
-              Click "Preview Website" to see your landing page in action, or
-              copy the code to deploy instantly!
-            </span>
-            <span className="sm:hidden">
-              Preview or copy your code to deploy!
-            </span>
-          </p>
-        </div>
-      </motion.div>
+        </motion.div>
+
+      </div>
     );
   };
 
   return (
-    /* 
-     * REDESIGNED GENERATE PITCH PAGE
-     * - Animated background orbs for visual depth
-     * - Enhanced hero section with gradient animations
-     * - Premium glassmorphism input container
-     * - Responsive design across all breakpoints
-     */
-    <div className="pitch-page-container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative"
-      style={{
-        backgroundColor: 'transparent',
-        minHeight: '100vh',
-        color: '#FFFFFF'
-      }}
-    >
-      {/* Animated Background Orbs */}
-      <div className="background-orb orb-1" />
-      <div className="background-orb orb-2" />
-      <div className="background-orb orb-3" />
-      {/* Preview Modal */}
-      <AnimatePresence>
-        {showPreview && landingCode && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
-            onClick={closePreview}
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="card-glass w-full max-w-6xl h-[95vh] sm:h-[90vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div
-                className="flex items-center justify-between p-6 mt-15 border-b border-neutral-600 rounded-t-2xl bg-gray-800"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <div
-                      className="w-3 h-3 bg-red-400 rounded-full cursor-pointer hover:bg-red-500 transition-colors"
-                      onClick={closePreview}
-                      title="Close preview"
-                    ></div>
-                    <div
-                      className="w-3 h-3 bg-yellow-400 rounded-full cursor-pointer"
-                      onClick={() => window.open(previewUrl, "_blank")}
-                      title="Open preview in new tab"
-                    ></div>
-                    <div
-                      className="w-3 h-3 bg-green-400 rounded-full cursor-pointer"
-                      onClick={() => window.open(previewUrl, "_blank")}
-                      title="Open preview in new tab"
-                    ></div>
-                  </div>
-                  <h3
-                    className="font-primary font-bold text-lg flex items-center text-white"
-                  >
-                    <span className="mr-3 text-xl">🌐</span>
-                    Website Preview - {result?.name}
-                  </h3>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      navigator.clipboard.writeText(landingCode);
-                      showNotification("Code copied to clipboard!", "success");
-                    }}
-                    className="btn-secondary text-sm"
-                  >
-                    📋 Copy Code
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={closePreview}
-                    className="btn-primary text-sm"
-                  >
-                    ✕ Close
-                  </motion.button>
-                </div>
-              </div>
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans selection:bg-[var(--accent-primary)] selection:text-white overflow-x-hidden">
+      {/* Background Elements */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--accent-primary)] rounded-full blur-[120px] opacity-20 animate-blob"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--accent-secondary)] rounded-full blur-[120px] opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-[var(--accent-tertiary)] rounded-full blur-[120px] opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
+      </div>
 
-              {/* Preview Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-12">
+        {/* Header */}
+        <header className="flex justify-between items-center mb-8 sm:mb-12 animate-fade-in-down">
+          <div className="flex items-center space-x-3 sm:space-x-4 group cursor-pointer" onClick={() => onNavigate('home')}>
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+              <div className="absolute inset-0 bg-[var(--gradient-primary)] rounded-xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity"></div>
               <div
-                className="flex-1 rounded-b-2xl overflow-hidden bg-gray-900"
+                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-primary)' }}
+                className="relative w-full h-full rounded-xl flex items-center justify-center shadow-xl"
               >
-                <iframe
-                  src={previewUrl}
-                  className="w-full h-full border-0"
-                  title="Website Preview"
-                  sandbox="allow-scripts allow-same-origin"
-                />
+                <img src={LogoIcon} alt="PitchCraft" className="w-6 h-6 sm:w-8 sm:h-8 transform group-hover:scale-110 transition-transform duration-300" />
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="relative z-10">
-        {/* Header with Navigation */}
-        <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 sm:mb-12 lg:mb-16"
-        >
-          {/* Navigation Bar */}
-          <div className="flex items-center justify-between mb-6 sm:mb-8">
-            <LinkButton
-              onClick={() => onNavigate && onNavigate("my-pitches")}
-              className="flex items-center space-x-2"
-            >
-              <span className="text-lg">←</span>
-              <span className="font-medium">Back to My Pitches</span>
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-2xl sm:text-3xl font-bold font-primary tracking-tight">
+                <span style={{
+                  background: 'var(--gradient-primary-bold)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  color: 'transparent'
+                }}>Pitch</span>
+                <span style={{ color: 'var(--text-primary)' }}>Craft</span>
+              </h1>
+              <span className="text-xs sm:text-sm font-medium tracking-wide" style={{ color: 'var(--text-tertiary)' }}>AI-Powered Startup Builder</span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <LinkButton onClick={() => onNavigate('history')} className="hidden sm:flex text-sm font-medium hover:text-[var(--accent-primary)] transition-colors">
+              <span className="mr-2">📂</span> History
             </LinkButton>
+            <div className="h-8 w-[1px] bg-[var(--border-primary)] hidden sm:block"></div>
+            <div className="flex items-center space-x-3 bg-[var(--bg-secondary)] px-3 py-1.5 rounded-full border border-[var(--border-secondary)]">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold shadow-inner">
+                {user.email[0].toUpperCase()}
+              </div>
+              <span className="text-sm font-medium hidden sm:block pr-1" style={{ color: 'var(--text-secondary)' }}>{user.email.split('@')[0]}</span>
+            </div>
+          </div>
+        </header>
 
-            {/* Step Indicators */}
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <div
-                className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all"
-                style={{
-                  background: !result ? 'var(--dark-gradient-primary)' : 'var(--dark-gradient-success)',
-                  color: 'var(--dark-text-primary)',
-                  border: `1px solid ${!result ? 'var(--dark-border-primary)' : 'var(--dark-border-success)'}`
-                }}
-              >
-                <span className="text-base">{!result ? "✏️" : "✅"}</span>
-                <span className="hidden sm:inline">Describe Idea</span>
-                <span className="sm:hidden">1</span>
+        {/* Step Indicator */}
+        {!result && (
+          <div className="flex justify-center mb-8 animate-fade-in-up">
+            <div className="flex items-center space-x-2 sm:space-x-4 bg-[var(--bg-secondary)] px-4 py-2 rounded-full border border-[var(--border-secondary)]">
+              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-full transition-all ${!loading ? 'bg-[var(--accent-primary)] text-white' : 'text-[var(--text-tertiary)]'}`}>
+                <span>✏️</span>
+                <span className="text-sm font-medium hidden sm:inline">Describe Idea</span>
               </div>
-              <div
-                className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all"
-                style={{
-                  background: result && !landingCode
-                    ? 'var(--dark-gradient-primary)'
-                    : landingCode
-                      ? 'var(--dark-gradient-success)'
-                      : 'var(--dark-gradient-secondary)',
-                  color: result || landingCode ? 'var(--dark-text-primary)' : 'var(--dark-text-disabled)',
-                  border: `1px solid ${result && !landingCode
-                    ? 'var(--dark-border-primary)'
-                    : landingCode
-                      ? 'var(--dark-border-success)'
-                      : 'var(--dark-border-tertiary)'
-                    }`
-                }}
-              >
-                <span className="text-base">
-                  {landingCode ? "✅" : result ? "⚡" : "⏳"}
-                </span>
-                <span className="hidden sm:inline">Generate</span>
-                <span className="sm:hidden">2</span>
+              <div className="w-6 h-[2px] bg-[var(--border-secondary)]" />
+              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-full transition-all ${loading ? 'bg-[var(--accent-primary)] text-white' : 'text-[var(--text-tertiary)]'}`}>
+                <span>⚡</span>
+                <span className="text-sm font-medium hidden sm:inline">Generate</span>
               </div>
-              <div
-                className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all"
-                style={{
-                  background: landingCode ? 'var(--dark-gradient-primary)' : 'var(--dark-gradient-secondary)',
-                  color: landingCode ? 'var(--dark-text-primary)' : 'var(--dark-text-disabled)',
-                  border: `1px solid ${landingCode ? 'var(--dark-border-primary)' : 'var(--dark-border-tertiary)'}`
-                }}
-              >
-                <span className="text-base">{landingCode ? "🎯" : "⏳"}</span>
-                <span className="hidden sm:inline">Review & Save</span>
-                <span className="sm:hidden">3</span>
+              <div className="w-6 h-[2px] bg-[var(--border-secondary)]" />
+              <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-[var(--text-tertiary)]">
+                <span>✅</span>
+                <span className="text-sm font-medium hidden sm:inline">Review & Save</span>
               </div>
             </div>
           </div>
+        )}
 
-          {/* Main Header - Enhanced Hero Section */}
-          <div className="pitch-hero text-center">
-            <motion.div
-              whileHover={{ scale: 1.05, rotate: 3 }}
-              className="pitch-hero-icon mx-auto"
-            >
-              <img
-                src={LogoIcon}
-                alt="Pitch Crafter"
-                className="w-14 h-14"
-              />
-            </motion.div>
-            <h1 className="pitch-hero-title mb-4 sm:mb-6 px-4">
-              Craft Your Perfect Pitch
-            </h1>
-            <p className="pitch-hero-subtitle px-4">
-              Transform your startup idea into a complete business package with
-              AI-powered pitch generation, branding, and production-ready website code.
+        {/* Hero Section */}
+        {!result && !loading && (
+          <div className="text-center mb-10 sm:mb-12">
+            {/* Purple Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <span className="text-3xl sm:text-4xl">✨</span>
+              </div>
+            </div>
+
+            {/* Heading */}
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-primary mb-4 leading-tight animate-fade-in-up">
+              <span style={{
+                background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #8b5cf6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>Craft Your Perfect Pitch</span>
+            </h2>
+
+            {/* Subtitle */}
+            <p style={{ color: 'var(--text-secondary)' }} className="text-base sm:text-lg max-w-xl mx-auto leading-relaxed animate-fade-in-up animation-delay-100">
+              Transform your startup idea into a complete business package with AI-powered pitch generation, branding, and production-ready website code.
             </p>
           </div>
-        </motion.div>
+        )}
 
-        {/* Enhanced Form Section */}
+        {/* Input Form */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="pitch-input-container mb-8 sm:mb-12"
+          style={{
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-primary)',
+            boxShadow: 'var(--shadow-2xl)',
+          }}
+          className={`max-w-4xl mx-auto rounded-2xl sm:rounded-3xl p-1 bg-opacity-80 backdrop-blur-xl transition-all duration-500 ${result ? 'mb-8' : 'mb-20'}`}
+          animate={{
+            scale: loading ? 0.98 : 1,
+            opacity: 1
+          }}
         >
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label
-                className="flex items-center text-sm font-semibold mb-3"
-                style={{ color: 'var(--dark-text-primary)' }}
-              >
-                <span className="text-xl mr-2">💡</span>
-                <span>Describe Your Startup Vision</span>
-              </label>
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="I want to build an AI-powered fitness app that creates personalized workout plans with real-time form correction using computer vision, targeting busy professionals..."
-                className="pitch-textarea"
-                maxLength={2000}
-                required
-              />
+          <div className="bg-[var(--bg-primary)] rounded-[1.2rem] sm:rounded-[1.4rem] p-4 sm:p-8">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Form Label */}
+              <div className="flex items-center space-x-2 mb-2">
+                <span className="text-xl">💡</span>
+                <label className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Describe Your Startup Vision
+                </label>
+              </div>
 
-              {/* Character Counter */}
-              <div className="character-counter">
-                <span className={`character-count ${prompt.length > 1800 ? 'warning' : ''} ${prompt.length >= 2000 ? 'error' : ''}`}>
-                  {prompt.length} / 2000 characters
+              {/* Textarea */}
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                <div className="relative">
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    maxLength={5000}
+                    placeholder="I want to build an AI-powered fitness app that creates personalized workout plans with real-time form correction using computer vision, targeting busy professionals..."
+                    className="w-full h-32 sm:h-36 bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-primary)] rounded-xl px-4 py-4 sm:px-5 sm:py-4 text-base focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none transition-all placeholder:text-[var(--text-disabled)]"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              {/* Character Counter Row */}
+              <div className="flex justify-between items-center text-sm">
+                <span style={{ color: 'var(--text-tertiary)' }}>
+                  {prompt.length} / 5000 Characters
                 </span>
-                <span className="text-xs" style={{ color: 'var(--dark-text-tertiary)' }}>
-                  Be detailed for better results
+                <span style={{ color: 'var(--text-tertiary)' }} className="flex items-center">
+                  <span className="mr-1">💭</span> Be detailed for better results
                 </span>
               </div>
-            </div>
 
-            {/* Suggestion Chips */}
-            <div className="suggestion-chips mb-6">
-              <button
-                type="button"
-                className="suggestion-chip"
-                onClick={() => setPrompt("An AI-powered personal finance app that automatically categorizes expenses, predicts future spending, and provides personalized saving recommendations for millennials.")}
-              >
-                <span className="icon">💰</span>
-                <span>FinTech App</span>
-              </button>
-              <button
-                type="button"
-                className="suggestion-chip"
-                onClick={() => setPrompt("A sustainable e-commerce platform that connects eco-conscious consumers with local artisans, featuring carbon-neutral shipping and a zero-waste packaging system.")}
-              >
-                <span className="icon">🌱</span>
-                <span>Eco Commerce</span>
-              </button>
-              <button
-                type="button"
-                className="suggestion-chip"
-                onClick={() => setPrompt("An EdTech platform that uses AI to create personalized learning paths for students, with interactive AR/VR experiences and real-time progress tracking for parents.")}
-              >
-                <span className="icon">📚</span>
-                <span>EdTech Platform</span>
-              </button>
-              <button
-                type="button"
-                className="suggestion-chip"
-                onClick={() => setPrompt("A healthcare app that uses wearable data and AI to predict potential health issues, connecting users with telehealth doctors for preventive care consultations.")}
-              >
-                <span className="icon">🏥</span>
-                <span>HealthTech</span>
-              </button>
-            </div>
-
-            {/* Enhanced Generate Button */}
-            <button
-              type="submit"
-              disabled={loading || !prompt.trim()}
-              className={`generate-btn ${!loading && prompt.trim() ? 'generate-btn-pulse' : ''}`}
-            >
-              <AnimatePresence mode="wait">
-                {loading ? (
-                  <motion.div
-                    key="loading"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="flex items-center justify-center space-x-3"
+              {/* Quick Suggestion Tags */}
+              <div className="flex flex-wrap gap-2 pt-2">
+                {[
+                  { icon: '💳', label: 'FinTech App' },
+                  { icon: '🤖', label: 'AI Startup' },
+                  { icon: '☁️', label: 'SaaS Platform' },
+                  { icon: '🛒', label: 'E-commerce' },
+                  { icon: '🏥', label: 'HealthTech' },
+                  { icon: '📚', label: 'EdTech' },
+                ].map((tag) => (
+                  <button
+                    key={tag.label}
+                    type="button"
+                    onClick={() => setPrompt(prev => prev ? `${prev} ${tag.icon} ${tag.label}` : `I want to build a ${tag.label.toLowerCase()} that...`)}
+                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all hover:scale-105"
+                    style={{
+                      background: 'var(--bg-tertiary)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border-secondary)',
+                    }}
                   >
+                    <span>{tag.icon}</span>
+                    <span>{tag.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Generate Button */}
+              <GalaxyButton
+                type="submit"
+                disabled={loading || !prompt.trim()}
+                className={`${!loading && prompt.trim() ? 'generate-btn-pulse' : ''}`}
+              >
+                <AnimatePresence mode="wait">
+                  {loading ? (
                     <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                      className="w-6 h-6 border-2 border-white border-t-transparent rounded-full"
-                    />
-                    <span>AI is crafting your startup...</span>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="idle"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="flex items-center justify-center space-x-3"
-                  >
-                    <span className="text-xl">✨</span>
-                    <span>Generate Complete Startup Package</span>
-                    <span className="text-xl">🚀</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </button>
-          </form>
+                      key="loading"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="flex items-center justify-center space-x-3"
+                    >
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                        className="w-6 h-6 border-2 border-white border-t-transparent rounded-full"
+                      />
+                      <span>AI is crafting your startup...</span>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="idle"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="flex items-center justify-center space-x-3"
+                    >
+                      <span className="text-xl">✨</span>
+                      <span>Generate Complete Startup Package</span>
+                      <span className="text-xl">🚀</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </GalaxyButton>
+            </form>
+          </div>
         </motion.div>
 
         {/* Results Section */}
         <AnimatePresence>
           {result && (
             <motion.div
-              initial={{ opacity: 0, y: 50 }}
+              initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
-              className="mb-12"
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.6 }}
+              className="space-y-8 pb-20"
             >
-              {/* Enhanced Tabs */}
-              <motion.div
-                className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mb-6 sm:mb-8 rounded-xl sm:rounded-2xl p-2 w-full sm:w-fit mx-auto"
-                style={{
-                  background: 'var(--dark-card-bg)',
-                  border: '1px solid var(--dark-border-primary)',
-                  boxShadow: 'var(--dark-shadow-lg)',
-                  backdropFilter: 'blur(10px)',
-                  color: 'var(--dark-text-primary)'
-                }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                {[
-                  {
-                    id: "pitch",
-                    label: "📊 Pitch Details",
-                    shortLabel: "📊 Pitch",
-                    icon: "💼",
-                  },
-                  {
-                    id: "website",
-                    label: "🌐 Website Code",
-                    shortLabel: "🌐 Code",
-                    icon: "🚀",
-                  },
-                ].map((tab) => (
-                  <PrimaryButton
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    variant={activeTab === tab.id ? "primary" : "secondary"}
-                    className={`px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-center space-x-2 text-sm sm:text-base`}
+              {/* Tabs */}
+              <div className="flex justify-center mb-8">
+                <div className="bg-[var(--bg-secondary)] p-1.5 rounded-xl border border-[var(--border-secondary)] inline-flex shadow-lg relative z-10">
+                  <button
+                    onClick={() => setActiveTab("pitch")}
+                    className={`px-6 sm:px-8 py-2.5 rounded-lg text-sm sm:text-base font-semibold transition-all duration-300 flex items-center space-x-2 ${activeTab === "pitch"
+                      ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-md transform scale-105"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                      }`}
                   >
-                    <span>{tab.icon}</span>
-                    <span className="hidden sm:inline">{tab.label}</span>
-                    <span className="sm:hidden">{tab.shortLabel}</span>
-                  </PrimaryButton>
-                ))}
-              </motion.div>
+                    <span>📊</span>
+                    <span>Pitch Deck</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("website")}
+                    className={`px-6 sm:px-8 py-2.5 rounded-lg text-sm sm:text-base font-semibold transition-all duration-300 flex items-center space-x-2 ${activeTab === "website"
+                      ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-md transform scale-105"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                      }`}
+                  >
+                    <span>🌐</span>
+                    <span>Landing Page</span>
+                  </button>
+                </div>
+              </div>
 
               {/* Tab Content */}
-              <AnimatePresence mode="wait">
-                {activeTab === "pitch" && (
-                  <motion.div
-                    key="pitch"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                  >
-                    <RenderPitchDetails data={result} />
-                  </motion.div>
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: activeTab === "pitch" ? -20 : 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                {activeTab === "pitch" ? (
+                  <RenderPitchDetails data={result} />
+                ) : (
+                  <RenderWebsiteCode code={landingCode} />
                 )}
-
-                {activeTab === "website" && landingCode && (
-                  <motion.div
-                    key="website"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                  >
-                    <RenderWebsiteCode code={landingCode} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
+        {showPreview && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+            <div className="bg-white w-full h-[90vh] max-w-7xl rounded-2xl overflow-hidden shadow-2xl flex flex-col animate-scale-in relative z-[101]">
+              <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 className="font-bold text-gray-800 flex items-center">
+                  <span className="mr-2">📱</span> Live Preview
+                </h3>
+                <button
+                  onClick={closePreview}
+                  className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-500 hover:text-gray-800"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 bg-gray-100 relative">
+                {previewUrl ? (
+                  <iframe
+                    src={previewUrl}
+                    className="w-full h-full border-0"
+                    title="Website Preview"
+                    sandbox="allow-scripts allow-same-origin"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                      <p>Loading preview...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Global CSS for Animations */}
+      <style>{`
+        @keyframes blob {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.8s ease-out forwards;
+        }
+        .animate-fade-in-down {
+          animation: fadeInDown 0.8s ease-out forwards;
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .font-primary {
+          font-family: 'Outfit', sans-serif;
+        }
+        /* Pulse animation for the button */
+        @keyframes pulse-custom {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+          50% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+        }
+        .generate-btn-pulse {
+          animation: pulse-custom 2s infinite;
+        }
+      `}</style>
     </div>
   );
 }

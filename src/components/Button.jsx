@@ -70,7 +70,7 @@ export const NavButton = ({
 };
 
 // Primary Button Component
-export const PrimaryButton = ({ children, onClick, disabled = false, className = "" }) => {
+export const PrimaryButton = ({ children, onClick, disabled = false, className = "", ...props }) => {
   return (
     <button
       onClick={onClick}
@@ -120,6 +120,7 @@ export const PrimaryButton = ({ children, onClick, disabled = false, className =
           e.target.style.boxShadow = 'var(--dark-shadow-lg)';
         }
       }}
+      {...props}
     >
       {children}
     </button>

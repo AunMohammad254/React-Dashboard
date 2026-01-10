@@ -133,7 +133,7 @@ export default defineConfig(({ mode }) => ({
   },
 
   // Base path for deployment
-  base: './',
+  base: '/',
 
   // Resolve aliases for cleaner imports
   resolve: {
