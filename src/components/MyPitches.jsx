@@ -210,17 +210,29 @@ export default function MyPitches({ user, onNavigate }) {
                 <span className="hidden sm:inline">Filter by Industry</span>
                 <span className="sm:hidden">Industry</span>
               </label>
-              <select
-                value={filterIndustry}
-                onChange={(e) => setFilterIndustry(e.target.value)}
-                className="input-field text-sm sm:text-base"
-              >
-                {industries.map(industry => (
-                  <option key={industry} value={industry}>
-                    {industry === "all" ? "All Industries" : industry}
-                  </option>
-                ))}
-              </select>
+              <div className="relative group">
+                <select
+                  value={filterIndustry}
+                  onChange={(e) => setFilterIndustry(e.target.value)}
+                  className="input-field appearance-none cursor-pointer pr-10 text-sm sm:text-base relative bg-transparent focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    color: 'white'
+                  }}
+                >
+                  {industries.map(industry => (
+                    <option key={industry} value={industry} className="bg-neutral-900 text-white py-2">
+                      {industry === "all" ? "All Industries" : industry}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="w-5 h-5 text-neutral-400 group-hover:text-primary-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* Sort */}
@@ -230,15 +242,27 @@ export default function MyPitches({ user, onNavigate }) {
                 <span className="mr-1.5 sm:mr-2 text-base sm:text-lg">📊</span>
                 Sort By
               </label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="input-field text-sm sm:text-base"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="name">Name A-Z</option>
-              </select>
+              <div className="relative group">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="input-field appearance-none cursor-pointer pr-10 text-sm sm:text-base relative bg-transparent focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    color: 'white'
+                  }}
+                >
+                  <option value="newest" className="bg-neutral-900 text-white py-2">Newest First</option>
+                  <option value="oldest" className="bg-neutral-900 text-white py-2">Oldest First</option>
+                  <option value="name" className="bg-neutral-900 text-white py-2">Name A-Z</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="w-5 h-5 text-neutral-400 group-hover:text-primary-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
 
