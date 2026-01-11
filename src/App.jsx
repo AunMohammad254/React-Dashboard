@@ -5,6 +5,8 @@ import PitchForm from "./components/PitchForm";
 import MyPitches from "./components/MyPitches";
 import UpdatePassword from "./components/UpdatePassword";
 import Navbar from "./components/Navbar";
+import InvestorChat from "./components/InvestorChat";
+import PitchPractice from "./components/PitchPractice";
 import LogoIcon from "./assets/logo-icon.svg";
 import "./App.css";
 import AuroraBackground from "./components/AuroraBackground";
@@ -12,6 +14,7 @@ import AuroraBackground from "./components/AuroraBackground";
 export default function App() {
   const [user, setUser] = useState(null);
   const [currentView, setCurrentView] = useState("generate");
+  const [activePitch, setActivePitch] = useState(null); // Pitch for simulation/practice
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
@@ -138,7 +141,11 @@ export default function App() {
               </span>
               <span>/</span>
               <span className="font-medium text-neutral-800 truncate">
-                {currentView === "generate" ? "Generate Pitch" : "My Pitches"}
+                {currentView === "generate" ? "Generate Pitch"
+                  : currentView === "my-pitches" ? "My Pitches"
+                    : currentView === "investor-chat" ? "Shark Tank Simulator"
+                      : currentView === "pitch-practice" ? "Pitch Dojo"
+                        : "Update Password"}
               </span>
             </nav>
           </div>
@@ -151,7 +158,18 @@ export default function App() {
               </div>
             ) : currentView === "my-pitches" ? (
               <div key="my-pitches" className="animate-fade-in-up w-full">
-                <MyPitches user={user} onNavigate={setCurrentView} />
+                <MyPitches user={user} onNavigate={(view, pitch) => {
+                  if (pitch) setActivePitch(pitch);
+                  setCurrentView(view);
+                }} />
+              </div>
+            ) : currentView === "investor-chat" && activePitch ? (
+              <div key="investor-chat" className="animate-fade-in-up w-full">
+                <InvestorChat pitch={activePitch} onExit={() => setCurrentView("my-pitches")} />
+              </div>
+            ) : currentView === "pitch-practice" && activePitch ? (
+              <div key="pitch-practice" className="animate-fade-in-up w-full">
+                <PitchPractice pitch={activePitch} onExit={() => setCurrentView("my-pitches")} />
               </div>
             ) : (
               <div key="update-password" className="animate-fade-in-up w-full">

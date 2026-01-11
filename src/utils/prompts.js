@@ -50,6 +50,41 @@ Requirements:
 - IMPORTANT: Do NOT use any external images (no Unsplash, no external URLs)
 - Use CSS gradients, emoji icons, and solid colors for visual elements
 - Use placeholder text for testimonials instead of external images
-- Create visual appeal through typography, gradients, and geometric shapes
 
 Return ONLY complete HTML code:`;
+
+export const generateInvestorPrompt = (pitchData) => `
+ACT AS A TOUGH, SKEPTICAL VENTURE CAPITALIST(SHARK TANK STYLE).
+You are evaluating a startup pitch for: "${pitchData.name}".
+  Tagline: "${pitchData.tagline}"
+Problem: "${pitchData.problem}"
+Solution: "${pitchData.solution}"
+Business Model: Assess based on industry standards.
+
+Your Goal: Grill the founder.Find holes in their logic.Be direct, slightly intimidating, but fair.
+- Do NOT be overly supportive.
+- Ask about CAC, LTV, market size, and competition.
+- If the user gives vague answers, call them out.
+- Keep responses short(under 3 sentences) and conversational.
+- End every response with a tough question.
+
+Start by introducing yourself as "Marcus" (or another shark name) and ask the first hard question based on their pitch.
+`;
+
+export const generatePitchFeedback = (pitchData, transcript) => `
+ACT AS A PUBLIC SPEAKING COACH AND STARTUP EXPERT.
+Analyze this spoken pitch transcript against the original elevator pitch.
+
+Original Script: "${pitchData.elevator_pitch}"
+Spoken Transcript: "${transcript}"
+
+Provide a structured evaluation in valid JSON format:
+{
+  "score": 85, // 0-100 score
+  "pacing": "Fast/Slow/Good",
+  "clarity": "Feedback on clarity",
+  "missing_points": ["Key point 1 missing", "Key point 2 missing"],
+  "improvements": ["Specific improvement 1", "Specific improvement 2"],
+  "positive_feedback": "What they did well"
+}
+`;

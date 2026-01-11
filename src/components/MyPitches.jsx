@@ -334,6 +334,16 @@ export default function MyPitches({ user, onNavigate }) {
               onClose={() => setSelectedPitch(null)}
               onDelete={() => handleDelete(selectedPitch.id)}
               onPreview={() => previewLandingPage(selectedPitch)}
+              onSimulate={() => {
+                if (onNavigate) {
+                  onNavigate("investor-chat", selectedPitch);
+                }
+              }}
+              onPractice={() => {
+                if (onNavigate) {
+                  onNavigate("pitch-practice", selectedPitch);
+                }
+              }}
             />
           )}
 

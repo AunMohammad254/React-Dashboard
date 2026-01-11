@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-export default function PitchModal({ pitch, onClose, onDelete, onPreview }) {
+export default function PitchModal({ pitch, onClose, onDelete, onPreview, onSimulate, onPractice }) {
     const d = pitch.generated_data;
 
     return (
@@ -496,6 +496,26 @@ export default function PitchModal({ pitch, onClose, onDelete, onPreview }) {
                 >
                     <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
                         <div className="flex space-x-1">
+                            <motion.button
+                                whileHover={{ scale: 1.05, y: -2 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={onSimulate}
+                                className="btn-primary px-6 py-4 text-lg font-primary font-bold shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-red-600 to-orange-600 flex items-center space-x-2 border border-red-500/30"
+                            >
+                                <span>🦈</span>
+                                <span>Shark Tank</span>
+                            </motion.button>
+
+                            <motion.button
+                                whileHover={{ scale: 1.05, y: -2 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={onPractice}
+                                className="btn-primary px-6 py-4 text-lg font-primary font-bold shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-violet-600 to-fuchsia-600 flex items-center space-x-2 border border-violet-500/30"
+                            >
+                                <span>🎤</span>
+                                <span>Pitch Dojo</span>
+                            </motion.button>
+
                             <motion.button
                                 whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
