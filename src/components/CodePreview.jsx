@@ -1,4 +1,6 @@
 import { motion } from "framer-motion";
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 const CodePreview = ({ code, onOpenPreview, onShowNotification }) => {
   if (!code) return null;
@@ -37,7 +39,7 @@ const CodePreview = ({ code, onOpenPreview, onShowNotification }) => {
               onClick={() => {
                 navigator.clipboard.writeText(code);
                 if (onShowNotification) {
-                    onShowNotification("Code copied to clipboard!", "success");
+                  onShowNotification("Code copied to clipboard!", "success");
                 }
               }}
               style={{
@@ -53,9 +55,25 @@ const CodePreview = ({ code, onOpenPreview, onShowNotification }) => {
         </div>
 
         <div className="p-0 relative">
-          <pre className="text-sm p-4 overflow-x-auto font-mono text-gray-300 bg-[#1a1b26] leading-relaxed max-h-125 overflow-y-auto custom-scrollbar">
-            {code}
-          </pre>
+          <div className="rounded-xl overflow-hidden border border-[var(--border-secondary)] shadow-inner">
+            <SyntaxHighlighter
+              language="html"
+              style={vscDarkPlus}
+              customStyle={{
+                margin: 0,
+                padding: '1.5rem',
+                background: '#1a1b26',
+                fontSize: '0.875rem',
+                lineHeight: '1.5',
+                maxHeight: '500px',
+                overflowY: 'auto'
+              }}
+              showLineNumbers={true}
+              wrapLines={true}
+            >
+              {code}
+            </SyntaxHighlighter>
+          </div>
         </div>
       </motion.div>
 
