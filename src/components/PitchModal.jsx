@@ -492,15 +492,16 @@ export default function PitchModal({ pitch, onClose, onDelete, onPreview, onSimu
                         background: "var(--bg-elevated)",
                         borderTop: "1px solid var(--border-primary)",
                     }}
-                    className="p-1.5"
+                    className="p-3 sm:p-4"
                 >
-                    <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-                        <div className="flex space-x-1">
+                    <div className="flex flex-col xl:flex-row justify-between items-center gap-4">
+                        {/* Primary Action Group */}
+                        <div className="flex flex-wrap justify-center gap-2 w-full xl:w-auto">
                             <motion.button
                                 whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={onSimulate}
-                                className="btn-primary px-6 py-4 text-lg font-primary font-bold shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-red-600 to-orange-600 flex items-center space-x-2 border border-red-500/30"
+                                className="flex-1 sm:flex-none btn-primary px-4 py-3 text-base sm:text-lg font-primary font-bold shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-red-600 to-orange-600 flex items-center justify-center space-x-2 border border-red-500/30 whitespace-nowrap"
                             >
                                 <span>🦈</span>
                                 <span>Shark Tank</span>
@@ -510,7 +511,7 @@ export default function PitchModal({ pitch, onClose, onDelete, onPreview, onSimu
                                 whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={onPractice}
-                                className="btn-primary px-6 py-4 text-lg font-primary font-bold shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-violet-600 to-fuchsia-600 flex items-center space-x-2 border border-violet-500/30"
+                                className="flex-1 sm:flex-none btn-primary px-4 py-3 text-base sm:text-lg font-primary font-bold shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-violet-600 to-fuchsia-600 flex items-center justify-center space-x-2 border border-violet-500/30 whitespace-nowrap"
                             >
                                 <span>🎤</span>
                                 <span>Pitch Dojo</span>
@@ -520,10 +521,10 @@ export default function PitchModal({ pitch, onClose, onDelete, onPreview, onSimu
                                 whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={onPreview}
-                                className="btn-primary px-6 py-4 text-lg font-primary font-bold shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-green-500 to-emerald-600 flex items-center space-x-2"
+                                className="flex-1 sm:flex-none btn-primary px-4 py-3 text-base sm:text-lg font-primary font-bold shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-green-500 to-emerald-600 flex items-center justify-center space-x-2 whitespace-nowrap"
                             >
                                 <span>🌐</span>
-                                <span>Preview Landing Page</span>
+                                <span>Preview Page</span>
                             </motion.button>
 
                             <motion.button
@@ -534,34 +535,35 @@ export default function PitchModal({ pitch, onClose, onDelete, onPreview, onSimu
                                         navigator.clipboard.writeText(pitch.landing_code);
                                         const el = document.createElement("div");
                                         el.className = "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg z-50";
-                                        el.innerText = "✅ Code copied to clipboard!";
+                                        el.innerText = "✅ Code copied!";
                                         document.body.appendChild(el);
                                         setTimeout(() => el.remove(), 3000);
                                     }
                                 }}
-                                className="btn-secondary px-6 py-3 text-lg font-primary font-bold shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-blue-500 to-purple-600 text-white border-0 flex items-center space-x-1"
+                                className="flex-1 sm:flex-none btn-secondary px-4 py-3 text-base sm:text-lg font-primary font-bold shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-blue-500 to-purple-600 text-white border-0 flex items-center justify-center space-x-1 whitespace-nowrap"
                             >
                                 <span>📋</span>
                                 <span>Copy Code</span>
                             </motion.button>
                         </div>
 
-                        <div className="flex space-x-3">
+                        {/* Secondary Action Group */}
+                        <div className="flex flex-wrap justify-center gap-2 w-full xl:w-auto">
                             <motion.button
                                 whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={onDelete}
-                                className="px-6 py-3 ml-2 text-lg font-primary font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-red-500 to-pink-600 text-white border-0 flex items-center space-x-1"
+                                className="flex-1 sm:flex-none px-4 py-3 text-base sm:text-lg font-primary font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-red-500 to-pink-600 text-white border-0 flex items-center justify-center space-x-1 whitespace-nowrap"
                             >
                                 <span>🗑️</span>
-                                <span>Delete Pitch</span>
+                                <span>Delete</span>
                             </motion.button>
 
                             <motion.button
                                 whileHover={{ scale: 1.05, y: -2 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={onClose}
-                                className="px-6 py-4 text-lg font-primary font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-neutral-500 to-neutral-600 text-white border-0"
+                                className="flex-1 sm:flex-none px-6 py-3 text-base sm:text-lg font-primary font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-linear-to-r from-neutral-500 to-neutral-600 text-white border-0"
                             >
                                 Close
                             </motion.button>

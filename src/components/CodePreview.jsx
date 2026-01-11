@@ -19,12 +19,12 @@ const CodePreview = ({ code, onOpenPreview, onShowNotification }) => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="border-b border-(--border-secondary) p-4 flex items-center justify-between bg-(--bg-secondary)">
-          <div className="flex items-center space-x-3">
+        <div className="border-b border-(--border-secondary) p-4 flex flex-col sm:flex-row items-center justify-between bg-(--bg-secondary) gap-4">
+          <div className="flex items-center space-x-3 w-full sm:w-auto">
             <span className="text-2xl">🌐</span>
             <h3 style={{ color: 'var(--text-primary)' }} className="font-bold text-lg">Landing Page Generator</h3>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap justify-center sm:justify-end gap-2 w-full sm:w-auto">
             <button
               onClick={onOpenPreview}
               style={{

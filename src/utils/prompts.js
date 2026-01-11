@@ -78,7 +78,8 @@ Analyze this spoken pitch transcript against the original elevator pitch.
 Original Script: "${pitchData.elevator_pitch}"
 Spoken Transcript: "${transcript}"
 
-Provide a structured evaluation in valid JSON format:
+Provide a structured evaluation in valid JSON format.
+RETURN ONLY THE JSON OBJECT. NO MARKDOWN. NO CONVERSATIONAL TEXT.
 {
   "score": 85, // 0-100 score
   "pacing": "Fast/Slow/Good",

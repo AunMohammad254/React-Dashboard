@@ -130,10 +130,10 @@ export default function InvestorChat({ pitch, onExit }) {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between p-4 sm:p-6 mb-4 card-glass"
+                className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 mb-4 card-glass gap-4"
             >
                 <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                    <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg animate-pulse shrink-0">
                         <span className="text-2xl">🦈</span>
                     </div>
                     <div>
@@ -143,7 +143,7 @@ export default function InvestorChat({ pitch, onExit }) {
                 </div>
                 <button
                     onClick={onExit}
-                    className="px-4 py-2 rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700 transition-colors font-medium text-sm border border-neutral-700"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700 transition-colors font-medium text-sm border border-neutral-700"
                 >
                     Exit Simulation
                 </button>
